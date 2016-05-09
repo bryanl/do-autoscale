@@ -11,6 +11,10 @@ type Repository interface {
 	SaveTemplate(t *Template) (int, error)
 	GetTemplate(id int) (*Template, error)
 	ListTemplates() ([]Template, error)
+
+	CreateGroup(t *Group) (string, error)
+	GetGroup(id string) (*Group, error)
+	ListGroups() ([]Group, error)
 }
 
 type pgRepo struct {
@@ -57,6 +61,36 @@ func (r *pgRepo) ListTemplates() ([]Template, error) {
 	return ts, nil
 }
 
+func (r *pgRepo) CreateGroup(g *Group) (string, error) {
+	var id string
+
+	err := r.db.Get(&id, sqlCreateGroup,
+		g.BaseName, g.BaseSize, g.MetricType, g.TemplateID)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (r *pgRepo) GetGroup(id string) (*Group, error) {
+	var g Group
+	if err := r.db.Get(&g, sqlGetGroup, id); err != nil {
+		return nil, err
+	}
+
+	return &g, nil
+}
+
+func (r *pgRepo) ListGroups() ([]Group, error) {
+	ts := []Group{}
+	if err := r.db.Select(&ts, sqlListGroups); err != nil {
+		return nil, err
+	}
+
+	return ts, nil
+}
+
 var (
 	sqlSaveTemplate = `
   INSERT into templates
@@ -69,4 +103,16 @@ var (
 
 	sqlListTemplates = `
   SELECT * from templates`
+
+	sqlCreateGroup = `
+  INSERT into groups
+  (base_name, base_size, metric_type, template_id)
+  VALUES ($1, $2, $3, $4)
+  RETURNING id`
+
+	sqlGetGroup = `
+  SELECT * from groups where id=$1`
+
+	sqlListGroups = `
+  SELECT * from groups`
 )

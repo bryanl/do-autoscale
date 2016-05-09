@@ -1,17 +1,14 @@
 package autoscale
 
-import (
-	"encoding/json"
-	"strings"
-)
+import "strings"
 
 // Group is an autoscale group
 type Group struct {
-	ID         string          `json:"ID"`
-	BaseName   string          `json:"base_name"`
-	BaseSize   int             `json:"base_size"`
-	MetricType string          `json:"metric_type"`
-	LoadConfig json.RawMessage `json:"load_config"`
+	ID         string `json:"ID" db:"id"`
+	BaseName   string `json:"base_name" db:"base_name"`
+	BaseSize   int    `json:"base_size" db:"base_size"`
+	MetricType string `json:"metric_type" db:"metric_type"`
+	TemplateID int    `json:"template_id" db:"template_id"`
 }
 
 // Template is a template that will be autoscaled.

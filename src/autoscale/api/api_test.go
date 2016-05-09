@@ -25,7 +25,7 @@ func TestListTemplates(t *testing.T) {
 
 	api := New(repo)
 
-	ts := httptest.NewServer(api.r)
+	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
@@ -53,7 +53,7 @@ func TestGetTemplate(t *testing.T) {
 
 	api := New(repo)
 
-	ts := httptest.NewServer(api.r)
+	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
@@ -79,7 +79,7 @@ func TestGetMissingTemplate(t *testing.T) {
 
 	api := New(repo)
 
-	ts := httptest.NewServer(api.r)
+	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
@@ -106,7 +106,7 @@ func TestCreateTemplate(t *testing.T) {
 
 	api := New(repo)
 
-	ts := httptest.NewServer(api.r)
+	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
@@ -136,4 +136,126 @@ func TestCreateTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, tmpl.ID)
+}
+
+func TestListGroups(t *testing.T) {
+	ogGroups := []autoscale.Group{
+		{ID: "12345"},
+		{ID: "6789"},
+	}
+
+	repo := &mocks.Repository{}
+	repo.On("ListGroups").Return(ogGroups, nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups"
+
+	res, err := http.Get(u.String())
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, 200, res.StatusCode)
+
+	var groups []autoscale.Group
+	err = json.NewDecoder(res.Body).Decode(&groups)
+	assert.NoError(t, err)
+
+	assert.Len(t, groups, 2)
+}
+
+func TestGetGroup(t *testing.T) {
+	ogGroup := autoscale.Group{ID: "abc"}
+
+	repo := &mocks.Repository{}
+	repo.On("GetGroup", "abc").Return(&ogGroup, nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups/abc"
+
+	res, err := http.Get(u.String())
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, 200, res.StatusCode)
+
+	var group autoscale.Group
+	err = json.NewDecoder(res.Body).Decode(&group)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "abc", group.ID)
+}
+
+func TestGetMissingGroup(t *testing.T) {
+	repo := &mocks.Repository{}
+	repo.On("GetGroup", "1").Return(nil, errors.New("boom"))
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups/1"
+
+	res, err := http.Get(u.String())
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, 404, res.StatusCode)
+}
+
+func TestCreateGroup(t *testing.T) {
+	repo := &mocks.Repository{}
+	expectedGroup := &autoscale.Group{
+		BaseName:   "as",
+		BaseSize:   3,
+		MetricType: "load",
+		TemplateID: 1,
+	}
+	repo.On("CreateGroup", expectedGroup).Return("abc", nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups"
+
+	req := []byte(`{
+    "base_name": "as",
+    "base_size": 3,
+    "metric_type": "load",
+    "template_id": 1
+  }`)
+
+	var buf bytes.Buffer
+	_, err = buf.Write(req)
+	assert.NoError(t, err)
+
+	res, err := http.Post(u.String(), "application/json", &buf)
+	assert.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, 201, res.StatusCode)
+
+	var group autoscale.Group
+	err = json.NewDecoder(res.Body).Decode(&group)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "abc", group.ID)
 }

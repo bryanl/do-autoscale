@@ -89,3 +89,85 @@ func TestListTemplates(t *testing.T) {
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestCreateGroup(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	mock.ExpectQuery("INSERT into groups (.+) RETURNING id").
+		WithArgs("id").
+		WithArgs("as", 3, "load", 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("abcdefg"))
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	g := &Group{
+		BaseName:   "as",
+		BaseSize:   3,
+		MetricType: "load",
+		TemplateID: 1,
+	}
+
+	id, err := repo.CreateGroup(g)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "abcdefg", id)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetGroup(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	columns := []string{"id", "base_name", "base_size", "metric_type", "template_id"}
+
+	mock.ExpectQuery("SELECT (.+) from groups (.+)").
+		WithArgs("abc").
+		WillReturnRows(sqlmock.NewRows(columns).AddRow("abc", "as", 3, "load", 1))
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	ogGroup := &Group{
+		ID:         "abc",
+		BaseName:   "as",
+		BaseSize:   3,
+		MetricType: "load",
+		TemplateID: 1,
+	}
+
+	group, err := repo.GetGroup("abc")
+	assert.NoError(t, err)
+	assert.Equal(t, ogGroup, group)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListGroups(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	columns := []string{"id", "base_name", "base_size", "metric_type", "template_id"}
+
+	mock.ExpectQuery("SELECT (.+) from groups").
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("abc", "as", 3, "load", 1).
+			AddRow("def", "as2", 3, "load", 2))
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	groups, err := repo.ListGroups()
+	assert.NoError(t, err)
+	assert.Len(t, groups, 2)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
