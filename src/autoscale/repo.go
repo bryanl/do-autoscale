@@ -3,12 +3,18 @@ package autoscale
 import (
 	"database/sql"
 
+	"github.com/go-errors/errors"
 	"github.com/jmoiron/sqlx"
+)
+
+var (
+	// ValidationErr is returned when the model isn't valid.
+	ValidationErr = errors.Errorf("is not valid")
 )
 
 // Repository maps data to an entity models.
 type Repository interface {
-	SaveTemplate(t *Template) (int, error)
+	CreateTemplate(t *Template) (int, error)
 	GetTemplate(id int) (*Template, error)
 	ListTemplates() ([]Template, error)
 
@@ -31,11 +37,15 @@ func NewRepository(db *sql.DB) (Repository, error) {
 	}, nil
 }
 
-func (r *pgRepo) SaveTemplate(t *Template) (int, error) {
+func (r *pgRepo) CreateTemplate(t *Template) (int, error) {
+	if !t.IsValid() {
+		return 0, errors.New(ValidationErr)
+	}
+
 	var id int
 
 	err := r.db.Get(&id, sqlSaveTemplate,
-		t.Region, t.Size, t.Image, t.RawSSHKeys, t.UserData)
+		t.Name, t.Region, t.Size, t.Image, t.RawSSHKeys, t.UserData)
 	if err != nil {
 		return 0, err
 	}
@@ -94,8 +104,8 @@ func (r *pgRepo) ListGroups() ([]Group, error) {
 var (
 	sqlSaveTemplate = `
   INSERT into templates
-  (region, size, image, ssh_keys, user_data)
-  VALUES ($1, $2, $3, $4, $5)
+  (name, region, size, image, ssh_keys, user_data)
+  VALUES ($1, $2, $3, $4, $5, $6)
   RETURNING id`
 
 	sqlGetTemplate = `

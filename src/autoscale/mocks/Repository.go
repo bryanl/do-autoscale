@@ -10,7 +10,7 @@ type Repository struct {
 	mock.Mock
 }
 
-func (_m *Repository) SaveTemplate(t *autoscale.Template) (int, error) {
+func (_m *Repository) CreateTemplate(t *autoscale.Template) (int, error) {
 	ret := _m.Called(t)
 
 	var r0 int

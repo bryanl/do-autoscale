@@ -96,13 +96,14 @@ func TestGetMissingTemplate(t *testing.T) {
 func TestCreateTemplate(t *testing.T) {
 	repo := &mocks.Repository{}
 	expectedTmpl := &autoscale.Template{
+		Name:       "a-template",
 		Region:     "dev0",
 		Size:       "512mb",
 		Image:      "ubuntu-14-04-x64",
 		RawSSHKeys: "123,456,789",
 		UserData:   "#userdata",
 	}
-	repo.On("SaveTemplate", expectedTmpl).Return(1, nil)
+	repo.On("CreateTemplate", expectedTmpl).Return(1, nil)
 
 	api := New(repo)
 
@@ -114,6 +115,7 @@ func TestCreateTemplate(t *testing.T) {
 	u.Path = "/templates"
 
 	req := []byte(`{
+    "name": "a-template",
     "region": "dev0",
     "size": "512mb",
     "image": "ubuntu-14-04-x64",

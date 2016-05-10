@@ -3,11 +3,12 @@ package autoscale
 import (
 	"testing"
 
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func TestSaveTemplate(t *testing.T) {
+func TestCreateTemplate(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 
@@ -15,13 +16,14 @@ func TestSaveTemplate(t *testing.T) {
 
 	mock.ExpectQuery("INSERT into templates (.+) RETURNING id").
 		WithArgs("id").
-		WithArgs("dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata").
+		WithArgs("a-template", "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("1"))
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
 
 	tmpl := &Template{
+		Name:       "a-template",
 		Region:     "dev0",
 		Size:       "512mb",
 		Image:      "ubuntu-14-04-x64",
@@ -29,10 +31,35 @@ func TestSaveTemplate(t *testing.T) {
 		UserData:   "userdata",
 	}
 
-	id, err := repo.SaveTemplate(tmpl)
+	id, err := repo.CreateTemplate(tmpl)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, id)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateTemplate_InvalidName(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	tmpl := &Template{
+		Name:       "!!!",
+		Region:     "dev0",
+		Size:       "512mb",
+		Image:      "ubuntu-14-04-x64",
+		RawSSHKeys: "1,2",
+		UserData:   "userdata",
+	}
+
+	_, err = repo.CreateTemplate(tmpl)
+
+	assert.True(t, errors.Is(err, ValidationErr))
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -43,16 +70,17 @@ func TestGetTemplate(t *testing.T) {
 
 	defer db.Close()
 
-	columns := []string{"region", "size", "image", "ssh_keys", "user_data"}
+	columns := []string{"name", "region", "size", "image", "ssh_keys", "user_data"}
 
 	mock.ExpectQuery("SELECT (.+) from templates (.+)").
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows(columns).AddRow("dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata"))
+		WillReturnRows(sqlmock.NewRows(columns).AddRow("a-template", "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata"))
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
 
 	ogTmpl := &Template{
+		Name:       "a-template",
 		Region:     "dev0",
 		Size:       "512mb",
 		Image:      "ubuntu-14-04-x64",
@@ -73,12 +101,12 @@ func TestListTemplates(t *testing.T) {
 
 	defer db.Close()
 
-	columns := []string{"id", "region", "size", "image", "ssh_keys", "user_data"}
+	columns := []string{"id", "name", "region", "size", "image", "ssh_keys", "user_data"}
 
 	mock.ExpectQuery("SELECT (.+) from templates").
 		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow(1, "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata").
-			AddRow(2, "dev0", "512mb", "ubuntu-14-04-x64", "3,4", "userdata"))
+			AddRow(1, "template-1", "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata").
+			AddRow(2, "template-2", "dev0", "512mb", "ubuntu-14-04-x64", "3,4", "userdata"))
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)

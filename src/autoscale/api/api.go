@@ -26,6 +26,7 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 }
 
 type createTemplateRequest struct {
+	Name     string   `json:"name"`
 	Region   string   `json:"region"`
 	Size     string   `json:"size"`
 	Image    string   `json:"image"`
@@ -104,6 +105,7 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := autoscale.Template{
+		Name:       ctr.Name,
 		Region:     ctr.Region,
 		Size:       ctr.Size,
 		Image:      ctr.Image,
@@ -111,7 +113,7 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 		UserData:   ctr.UserData,
 	}
 
-	id, err := a.repo.SaveTemplate(&tmpl)
+	id, err := a.repo.CreateTemplate(&tmpl)
 	if err != nil {
 		writeError(w, "unable to create template", http.StatusBadRequest)
 		return

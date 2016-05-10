@@ -1,6 +1,13 @@
 package autoscale
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
+
+var (
+	nameRe = regexp.MustCompile(`^\w[A-Za-z0-9\-]*$`)
+)
 
 // Group is an autoscale group
 type Group struct {
@@ -14,11 +21,21 @@ type Group struct {
 // Template is a template that will be autoscaled.
 type Template struct {
 	ID         int    `json:"id" db:"id"`
+	Name       string `json:"name" db:"name"`
 	Region     string `json:"string" db:"region"`
 	Size       string `json:"size" db:"size"`
 	Image      string `json:"image" db:"image"`
 	RawSSHKeys string `json:"ssh_keys" db:"ssh_keys"`
 	UserData   string `json:"user_data" db:"user_data"`
+}
+
+// IsValid returns if the template is valid or not.
+func (t *Template) IsValid() bool {
+	if !nameRe.MatchString(t.Name) {
+		return false
+	}
+
+	return true
 }
 
 // SSHKeys returns ssh keys as a string.
