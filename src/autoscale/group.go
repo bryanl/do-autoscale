@@ -1,6 +1,7 @@
 package autoscale
 
 import (
+	"encoding/json"
 	"regexp"
 	"strings"
 )
@@ -41,7 +42,44 @@ func (t *Template) IsValid() bool {
 // SSHKeys returns ssh keys as a string.
 func (t *Template) SSHKeys() []string {
 	return strings.Split(t.RawSSHKeys, ",")
+}
 
+// MarshalJSON is a custom json marshaler for template.
+func (t *Template) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ID       int      `json:"id" db:"id"`
+		Name     string   `json:"name" db:"name"`
+		Region   string   `json:"string" db:"region"`
+		Size     string   `json:"size" db:"size"`
+		Image    string   `json:"image" db:"image"`
+		SSHKeys  []string `json:"ssh_keys" db:"ssh_keys"`
+		UserData string   `json:"user_data" db:"user_data"`
+	}{
+		ID:       t.ID,
+		Name:     t.Name,
+		Region:   t.Region,
+		Size:     t.Size,
+		SSHKeys:  t.SSHKeys(),
+		UserData: t.UserData,
+	})
+}
+
+// UnmarshalJSON is a custom json unmarshaler for template.
+func (t *Template) UnmarshalJSON(data []byte) error {
+	type Alias Template
+	aux := &struct {
+		Keys []string `json:"ssh_keys"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	t.RawSSHKeys = strings.Join(aux.Keys, ",")
+	return nil
 }
 
 // LoadConfig is the configuration settings for a load based metric.
