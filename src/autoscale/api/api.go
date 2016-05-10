@@ -35,6 +35,7 @@ type createTemplateRequest struct {
 }
 
 type createGroupRequest struct {
+	Name       string `json:"name"`
 	BaseName   string `json:"base_name"`
 	BaseSize   int    `json:"base_size"`
 	MetricType string `json:"metric_type"`
@@ -122,7 +123,7 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 	tmpl.ID = id
 
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(tmpl)
+	_ = json.NewEncoder(w).Encode(&tmpl)
 }
 
 func (a *API) listGroups(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +161,7 @@ func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	group := autoscale.Group{
+		Name:       cgr.Name,
 		BaseName:   cgr.BaseName,
 		BaseSize:   cgr.BaseSize,
 		MetricType: cgr.MetricType,

@@ -133,6 +133,7 @@ func TestCreateGroup(t *testing.T) {
 	assert.NoError(t, err)
 
 	g := &Group{
+		Name:       "group",
 		BaseName:   "as",
 		BaseSize:   3,
 		MetricType: "load",
@@ -143,6 +144,30 @@ func TestCreateGroup(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "abcdefg", id)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateGroup_InvalidName(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	repo, err := NewRepository(db)
+	assert.NoError(t, err)
+
+	g := &Group{
+		Name:       "!!!",
+		BaseName:   "as",
+		BaseSize:   3,
+		MetricType: "load",
+		TemplateID: 1,
+	}
+
+	_, err = repo.CreateGroup(g)
+
+	assert.True(t, errors.Is(err, ValidationErr))
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

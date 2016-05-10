@@ -72,6 +72,10 @@ func (r *pgRepo) ListTemplates() ([]Template, error) {
 }
 
 func (r *pgRepo) CreateGroup(g *Group) (string, error) {
+	if !g.IsValid() {
+		return "", errors.New(ValidationErr)
+	}
+
 	var id string
 
 	err := r.db.Get(&id, sqlCreateGroup,
@@ -116,8 +120,8 @@ var (
 
 	sqlCreateGroup = `
   INSERT into groups
-  (base_name, base_size, metric_type, template_id)
-  VALUES ($1, $2, $3, $4)
+  (name, base_name, base_size, metric_type, template_id)
+  VALUES ($1, $2, $3, $4, $5)
   RETURNING id`
 
 	sqlGetGroup = `

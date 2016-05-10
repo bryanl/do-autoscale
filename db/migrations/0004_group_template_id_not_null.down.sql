@@ -1,0 +1,2 @@
+ALTER TABLE groups
+ALTER COLUMN template_ID DROP NOT NULL;

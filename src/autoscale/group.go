@@ -13,10 +13,20 @@ var (
 // Group is an autoscale group
 type Group struct {
 	ID         string `json:"ID" db:"id"`
+	Name       string `json:"name" db:"name"`
 	BaseName   string `json:"base_name" db:"base_name"`
 	BaseSize   int    `json:"base_size" db:"base_size"`
 	MetricType string `json:"metric_type" db:"metric_type"`
 	TemplateID int    `json:"template_id" db:"template_id"`
+}
+
+// IsValid returns if the template is valid or not.
+func (g *Group) IsValid() bool {
+	if !nameRe.MatchString(g.Name) {
+		return false
+	}
+
+	return true
 }
 
 // Template is a template that will be autoscaled.

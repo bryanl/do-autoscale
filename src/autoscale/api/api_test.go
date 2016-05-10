@@ -222,6 +222,7 @@ func TestGetMissingGroup(t *testing.T) {
 func TestCreateGroup(t *testing.T) {
 	repo := &mocks.Repository{}
 	expectedGroup := &autoscale.Group{
+		Name:       "group",
 		BaseName:   "as",
 		BaseSize:   3,
 		MetricType: "load",
@@ -239,6 +240,7 @@ func TestCreateGroup(t *testing.T) {
 	u.Path = "/groups"
 
 	req := []byte(`{
+    "name": "group",
     "base_name": "as",
     "base_size": 3,
     "metric_type": "load",
