@@ -1,7 +1,6 @@
 package autoscale
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,20 +25,21 @@ func TestTemplate_IsValid(t *testing.T) {
 	}
 }
 
-func TestTemplate_SSHKeys(t *testing.T) {
-	tmpl := Template{RawSSHKeys: "1,2,3"}
-	expected := []string{"1", "2", "3"}
-	assert.Equal(t, expected, tmpl.SSHKeys())
-}
+func TestGroup_IsValid(t *testing.T) {
+	cases := []struct {
+		Name    string
+		IsValid bool
+	}{
+		{Name: "1234", IsValid: true},
+		{Name: "-1234", IsValid: false},
+		{Name: "a-template", IsValid: true},
+	}
 
-func TestTemplate_Marshal(t *testing.T) {
-	tmpl := Template{RawSSHKeys: "1,2,3"}
-	b, err := json.Marshal(&tmpl)
-	assert.NoError(t, err)
+	for _, c := range cases {
+		group := Group{
+			Name: c.Name,
+		}
 
-	var tmpl2 Template
-	err = json.Unmarshal(b, &tmpl2)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "1,2,3", tmpl2.RawSSHKeys)
+		assert.Equal(t, c.IsValid, group.IsValid())
+	}
 }

@@ -16,8 +16,8 @@ import (
 
 func TestListTemplates(t *testing.T) {
 	ogTmpls := []autoscale.Template{
-		{ID: 1},
-		{ID: 2},
+		{ID: "1"},
+		{ID: "2"},
 	}
 
 	repo := &mocks.Repository{}
@@ -46,10 +46,10 @@ func TestListTemplates(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
-	ogTmpl := autoscale.Template{ID: 1}
+	ogTmpl := autoscale.Template{ID: "1"}
 
 	repo := &mocks.Repository{}
-	repo.On("GetTemplate", 1).Return(&ogTmpl, nil)
+	repo.On("GetTemplate", "1").Return(ogTmpl, nil)
 
 	api := New(repo)
 
@@ -70,12 +70,12 @@ func TestGetTemplate(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&tmpl)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 1, tmpl.ID)
+	assert.Equal(t, "1", tmpl.ID)
 }
 
 func TestGetMissingTemplate(t *testing.T) {
 	repo := &mocks.Repository{}
-	repo.On("GetTemplate", 1).Return(nil, errors.New("boom"))
+	repo.On("GetTemplate", "1").Return(autoscale.Template{}, errors.New("boom"))
 
 	api := New(repo)
 
@@ -95,15 +95,26 @@ func TestGetMissingTemplate(t *testing.T) {
 
 func TestCreateTemplate(t *testing.T) {
 	repo := &mocks.Repository{}
-	expectedTmpl := &autoscale.Template{
-		Name:       "a-template",
-		Region:     "dev0",
-		Size:       "512mb",
-		Image:      "ubuntu-14-04-x64",
-		RawSSHKeys: "123,456,789",
-		UserData:   "#userdata",
+	ctr := autoscale.CreateTemplateRequest{
+		Name:     "a-template",
+		Region:   "dev0",
+		Size:     "512mb",
+		Image:    "ubuntu-14-04-x64",
+		SSHKeys:  []string{"123", "456", "789"},
+		UserData: "#userdata",
 	}
-	repo.On("CreateTemplate", expectedTmpl).Return(1, nil)
+
+	tmpl := autoscale.Template{
+		ID:       "1",
+		Name:     "a-template",
+		Region:   "dev0",
+		Size:     "512mb",
+		Image:    "ubuntu-14-04-x64",
+		SSHKeys:  []string{"123", "456", "789"},
+		UserData: "#userdata",
+	}
+
+	repo.On("CreateTemplate", ctr).Return(tmpl, nil)
 
 	api := New(repo)
 
@@ -133,11 +144,11 @@ func TestCreateTemplate(t *testing.T) {
 
 	assert.Equal(t, 201, res.StatusCode)
 
-	var tmpl autoscale.Template
-	err = json.NewDecoder(res.Body).Decode(&tmpl)
+	var newTmpl autoscale.Template
+	err = json.NewDecoder(res.Body).Decode(&newTmpl)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 1, tmpl.ID)
+	assert.Equal(t, tmpl, newTmpl)
 }
 
 func TestListGroups(t *testing.T) {
@@ -175,7 +186,7 @@ func TestGetGroup(t *testing.T) {
 	ogGroup := autoscale.Group{ID: "abc"}
 
 	repo := &mocks.Repository{}
-	repo.On("GetGroup", "abc").Return(&ogGroup, nil)
+	repo.On("GetGroup", "abc").Return(ogGroup, nil)
 
 	api := New(repo)
 
@@ -201,7 +212,7 @@ func TestGetGroup(t *testing.T) {
 
 func TestGetMissingGroup(t *testing.T) {
 	repo := &mocks.Repository{}
-	repo.On("GetGroup", "1").Return(nil, errors.New("boom"))
+	repo.On("GetGroup", "1").Return(autoscale.Group{}, errors.New("boom"))
 
 	api := New(repo)
 
@@ -221,14 +232,24 @@ func TestGetMissingGroup(t *testing.T) {
 
 func TestCreateGroup(t *testing.T) {
 	repo := &mocks.Repository{}
-	expectedGroup := &autoscale.Group{
-		Name:       "group",
-		BaseName:   "as",
-		BaseSize:   3,
-		MetricType: "load",
-		TemplateID: 1,
+	cgr := autoscale.CreateGroupRequest{
+		Name:         "group",
+		BaseName:     "as",
+		BaseSize:     3,
+		MetricType:   "load",
+		TemplateName: "a-template",
 	}
-	repo.On("CreateGroup", expectedGroup).Return("abc", nil)
+
+	group := autoscale.Group{
+		ID:           "1",
+		Name:         "group",
+		BaseName:     "as",
+		BaseSize:     3,
+		MetricType:   "load",
+		TemplateName: "a-template",
+	}
+
+	repo.On("CreateGroup", cgr).Return(group, nil)
 
 	api := New(repo)
 
@@ -244,7 +265,7 @@ func TestCreateGroup(t *testing.T) {
     "base_name": "as",
     "base_size": 3,
     "metric_type": "load",
-    "template_id": 1
+    "template_name": "a-template"
   }`)
 
 	var buf bytes.Buffer
@@ -257,9 +278,9 @@ func TestCreateGroup(t *testing.T) {
 
 	assert.Equal(t, 201, res.StatusCode)
 
-	var group autoscale.Group
-	err = json.NewDecoder(res.Body).Decode(&group)
+	var newGroup autoscale.Group
+	err = json.NewDecoder(res.Body).Decode(&newGroup)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "abc", group.ID)
+	assert.Equal(t, newGroup, group)
 }

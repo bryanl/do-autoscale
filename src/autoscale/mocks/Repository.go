@@ -10,40 +10,38 @@ type Repository struct {
 	mock.Mock
 }
 
-func (_m *Repository) CreateTemplate(t *autoscale.Template) (int, error) {
-	ret := _m.Called(t)
+func (_m *Repository) CreateTemplate(tcr autoscale.CreateTemplateRequest) (autoscale.Template, error) {
+	ret := _m.Called(tcr)
 
-	var r0 int
-	if rf, ok := ret.Get(0).(func(*autoscale.Template) int); ok {
-		r0 = rf(t)
+	var r0 autoscale.Template
+	if rf, ok := ret.Get(0).(func(autoscale.CreateTemplateRequest) autoscale.Template); ok {
+		r0 = rf(tcr)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Get(0).(autoscale.Template)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*autoscale.Template) error); ok {
-		r1 = rf(t)
+	if rf, ok := ret.Get(1).(func(autoscale.CreateTemplateRequest) error); ok {
+		r1 = rf(tcr)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
 }
-func (_m *Repository) GetTemplate(id int) (*autoscale.Template, error) {
-	ret := _m.Called(id)
+func (_m *Repository) GetTemplate(name string) (autoscale.Template, error) {
+	ret := _m.Called(name)
 
-	var r0 *autoscale.Template
-	if rf, ok := ret.Get(0).(func(int) *autoscale.Template); ok {
-		r0 = rf(id)
+	var r0 autoscale.Template
+	if rf, ok := ret.Get(0).(func(string) autoscale.Template); ok {
+		r0 = rf(name)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*autoscale.Template)
-		}
+		r0 = ret.Get(0).(autoscale.Template)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(id)
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -71,40 +69,38 @@ func (_m *Repository) ListTemplates() ([]autoscale.Template, error) {
 
 	return r0, r1
 }
-func (_m *Repository) CreateGroup(t *autoscale.Group) (string, error) {
-	ret := _m.Called(t)
+func (_m *Repository) CreateGroup(gcr autoscale.CreateGroupRequest) (autoscale.Group, error) {
+	ret := _m.Called(gcr)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func(*autoscale.Group) string); ok {
-		r0 = rf(t)
+	var r0 autoscale.Group
+	if rf, ok := ret.Get(0).(func(autoscale.CreateGroupRequest) autoscale.Group); ok {
+		r0 = rf(gcr)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(autoscale.Group)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*autoscale.Group) error); ok {
-		r1 = rf(t)
+	if rf, ok := ret.Get(1).(func(autoscale.CreateGroupRequest) error); ok {
+		r1 = rf(gcr)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
 }
-func (_m *Repository) GetGroup(id string) (*autoscale.Group, error) {
-	ret := _m.Called(id)
+func (_m *Repository) GetGroup(name string) (autoscale.Group, error) {
+	ret := _m.Called(name)
 
-	var r0 *autoscale.Group
-	if rf, ok := ret.Get(0).(func(string) *autoscale.Group); ok {
-		r0 = rf(id)
+	var r0 autoscale.Group
+	if rf, ok := ret.Get(0).(func(string) autoscale.Group); ok {
+		r0 = rf(name)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*autoscale.Group)
-		}
+		r0 = ret.Get(0).(autoscale.Group)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(id)
+		r1 = rf(name)
 	} else {
 		r1 = ret.Error(1)
 	}

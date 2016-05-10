@@ -3,8 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"autoscale"
 
@@ -25,23 +23,6 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 	_ = json.NewEncoder(w).Encode(&em)
 }
 
-type createTemplateRequest struct {
-	Name     string   `json:"name"`
-	Region   string   `json:"region"`
-	Size     string   `json:"size"`
-	Image    string   `json:"image"`
-	SSHKeys  []string `json:"ssh_keys"`
-	UserData string   `json:"user_data"`
-}
-
-type createGroupRequest struct {
-	Name       string `json:"name"`
-	BaseName   string `json:"base_name"`
-	BaseSize   int    `json:"base_size"`
-	MetricType string `json:"metric_type"`
-	TemplateID int    `json:"template_id"`
-}
-
 // API is the autoscale API.
 type API struct {
 	Mux  *mux.Router
@@ -58,7 +39,7 @@ func New(repo autoscale.Repository) *API {
 	}
 
 	r.HandleFunc("/templates", a.listTemplates).Methods("GET")
-	r.HandleFunc("/templates/{id:[0-9]+}", a.getTemplate).Methods("GET")
+	r.HandleFunc("/templates/{id}", a.getTemplate).Methods("GET")
 	r.HandleFunc("/templates", a.createTemplate).Methods("POST")
 	r.HandleFunc("/groups", a.listGroups).Methods("GET")
 	r.HandleFunc("/groups/{id}", a.getGroup).Methods("GET")
@@ -80,14 +61,11 @@ func (a *API) listTemplates(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) getTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		writeError(w, "invalid id", http.StatusBadRequest)
-		return
-	}
+	id := vars["id"]
 
 	tmpl, err := a.repo.GetTemplate(id)
 	if err != nil {
+		log.WithError(err).Error("retrieve template")
 		writeError(w, "unable to retrieve template", http.StatusNotFound)
 		return
 	}
@@ -98,29 +76,19 @@ func (a *API) getTemplate(w http.ResponseWriter, r *http.Request) {
 func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var ctr createTemplateRequest
+	var ctr autoscale.CreateTemplateRequest
 	err := json.NewDecoder(r.Body).Decode(&ctr)
 	if err != nil {
+		log.WithError(err).Error("create template")
 		writeError(w, "invalid create template request", http.StatusBadRequest)
 		return
 	}
 
-	tmpl := autoscale.Template{
-		Name:       ctr.Name,
-		Region:     ctr.Region,
-		Size:       ctr.Size,
-		Image:      ctr.Image,
-		RawSSHKeys: strings.Join(ctr.SSHKeys, ","),
-		UserData:   ctr.UserData,
-	}
-
-	id, err := a.repo.CreateTemplate(&tmpl)
+	tmpl, err := a.repo.CreateTemplate(ctr)
 	if err != nil {
 		writeError(w, "unable to create template", http.StatusBadRequest)
 		return
 	}
-
-	tmpl.ID = id
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(&tmpl)
@@ -143,6 +111,7 @@ func (a *API) getGroup(w http.ResponseWriter, r *http.Request) {
 
 	group, err := a.repo.GetGroup(id)
 	if err != nil {
+		log.WithError(err).Error("get group")
 		writeError(w, "unable to retrieve group", http.StatusNotFound)
 		return
 	}
@@ -153,29 +122,20 @@ func (a *API) getGroup(w http.ResponseWriter, r *http.Request) {
 func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var cgr createGroupRequest
+	var cgr autoscale.CreateGroupRequest
 	err := json.NewDecoder(r.Body).Decode(&cgr)
 	if err != nil {
 		writeError(w, "invalid create group request", http.StatusBadRequest)
 		return
 	}
 
-	group := autoscale.Group{
-		Name:       cgr.Name,
-		BaseName:   cgr.BaseName,
-		BaseSize:   cgr.BaseSize,
-		MetricType: cgr.MetricType,
-		TemplateID: cgr.TemplateID,
-	}
-
-	id, err := a.repo.CreateGroup(&group)
+	g, err := a.repo.CreateGroup(cgr)
 	if err != nil {
+		log.WithError(err).Error("create group")
 		writeError(w, "unable to create group", http.StatusBadRequest)
 		return
 	}
 
-	group.ID = id
-
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(group)
+	_ = json.NewEncoder(w).Encode(&g)
 }

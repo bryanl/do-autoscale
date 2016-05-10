@@ -1,8 +1,13 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE templates (
-  id serial primary key,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text not null,
   region text,
   size text,
   image text,
   ssh_keys text,
   user_data text
 );
+
+CREATE UNIQUE INDEX templates_name_idx on templates(name);

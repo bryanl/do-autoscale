@@ -14,12 +14,12 @@ var (
 
 // Repository maps data to an entity models.
 type Repository interface {
-	CreateTemplate(t *Template) (int, error)
-	GetTemplate(id int) (*Template, error)
+	CreateTemplate(tcr CreateTemplateRequest) (Template, error)
+	GetTemplate(name string) (Template, error)
 	ListTemplates() ([]Template, error)
 
-	CreateGroup(t *Group) (string, error)
-	GetGroup(id string) (*Group, error)
+	CreateGroup(gcr CreateGroupRequest) (Group, error)
+	GetGroup(name string) (Group, error)
 	ListGroups() ([]Group, error)
 }
 
@@ -37,29 +37,39 @@ func NewRepository(db *sql.DB) (Repository, error) {
 	}, nil
 }
 
-func (r *pgRepo) CreateTemplate(t *Template) (int, error) {
-	if !t.IsValid() {
-		return 0, errors.New(ValidationErr)
+func (r *pgRepo) CreateTemplate(tcr CreateTemplateRequest) (Template, error) {
+	t := Template{
+		Name:     tcr.Name,
+		Region:   tcr.Region,
+		Size:     tcr.Size,
+		Image:    tcr.Image,
+		SSHKeys:  tcr.SSHKeys,
+		UserData: tcr.UserData,
 	}
 
-	var id int
+	if !t.IsValid() {
+		return Template{}, errors.New(ValidationErr)
+	}
+
+	var id string
 
 	err := r.db.Get(&id, sqlSaveTemplate,
-		t.Name, t.Region, t.Size, t.Image, t.RawSSHKeys, t.UserData)
+		t.Name, t.Region, t.Size, t.Image, t.SSHKeys, t.UserData)
 	if err != nil {
-		return 0, err
+		return Template{}, err
 	}
 
-	return id, nil
+	t.ID = id
+	return t, nil
 }
 
-func (r *pgRepo) GetTemplate(id int) (*Template, error) {
+func (r *pgRepo) GetTemplate(name string) (Template, error) {
 	var t Template
-	if err := r.db.Get(&t, sqlGetTemplate, id); err != nil {
-		return nil, err
+	if err := r.db.Get(&t, sqlGetTemplate, name); err != nil {
+		return Template{}, err
 	}
 
-	return &t, nil
+	return t, nil
 }
 
 func (r *pgRepo) ListTemplates() ([]Template, error) {
@@ -71,29 +81,39 @@ func (r *pgRepo) ListTemplates() ([]Template, error) {
 	return ts, nil
 }
 
-func (r *pgRepo) CreateGroup(g *Group) (string, error) {
+func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
+	g := Group{
+		Name:         gcr.Name,
+		BaseName:     gcr.BaseName,
+		BaseSize:     gcr.BaseSize,
+		MetricType:   gcr.MetricType,
+		TemplateName: gcr.TemplateName,
+	}
+
 	if !g.IsValid() {
-		return "", errors.New(ValidationErr)
+		return Group{}, errors.New(ValidationErr)
 	}
 
 	var id string
 
 	err := r.db.Get(&id, sqlCreateGroup,
-		g.BaseName, g.BaseSize, g.MetricType, g.TemplateID)
+		g.Name, g.BaseName, g.BaseSize, g.MetricType, g.TemplateName)
 	if err != nil {
-		return "", err
+		return Group{}, err
 	}
 
-	return id, nil
+	g.ID = id
+
+	return g, nil
 }
 
-func (r *pgRepo) GetGroup(id string) (*Group, error) {
+func (r *pgRepo) GetGroup(name string) (Group, error) {
 	var g Group
-	if err := r.db.Get(&g, sqlGetGroup, id); err != nil {
-		return nil, err
+	if err := r.db.Get(&g, sqlGetGroup, name); err != nil {
+		return Group{}, err
 	}
 
-	return &g, nil
+	return g, nil
 }
 
 func (r *pgRepo) ListGroups() ([]Group, error) {
@@ -113,19 +133,19 @@ var (
   RETURNING id`
 
 	sqlGetTemplate = `
-  SELECT * from templates where id=$1`
+  SELECT * from templates where name=$1`
 
 	sqlListTemplates = `
   SELECT * from templates`
 
 	sqlCreateGroup = `
   INSERT into groups
-  (name, base_name, base_size, metric_type, template_id)
+  (name, base_name, base_size, metric_type, template_name)
   VALUES ($1, $2, $3, $4, $5)
   RETURNING id`
 
 	sqlGetGroup = `
-  SELECT * from groups where id=$1`
+  SELECT * from groups where name=$1`
 
 	sqlListGroups = `
   SELECT * from groups`
