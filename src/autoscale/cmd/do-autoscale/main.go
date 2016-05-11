@@ -3,6 +3,7 @@ package main
 import (
 	"autoscale"
 	"autoscale/api"
+	"autoscale/watcher"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
@@ -11,11 +12,12 @@ import (
 
 // Specification describes our expected environment.
 type Specification struct {
-	DBUser     string `envconfig:"db_user"`
-	DBPassword string `envconfig:"db_password"`
-	DBAddr     string `envconfig:"db_addr"`
-	DBName     string `envconfig:"db_name"`
-	HTTPAddr   string `envconfig:"http_addr" default:"localhost:8888"`
+	DBUser      string `envconfig:"db_user"`
+	DBPassword  string `envconfig:"db_password"`
+	DBAddr      string `envconfig:"db_addr"`
+	DBName      string `envconfig:"db_name"`
+	HTTPAddr    string `envconfig:"http_addr" default:"localhost:8888"`
+	AccessToken string `envconfig:"access_token"`
 }
 
 func main() {
@@ -34,6 +36,11 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("unable to setup data repository")
 	}
+
+	watcher := watcher.New(s.AccessToken, repo)
+	go func() {
+		watcher.Watch()
+	}()
 
 	a := api.New(repo)
 	http.Handle("/", a.Mux)

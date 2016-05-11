@@ -15,10 +15,23 @@
 			"path": "/spew"
 		},
 		{
+			"importpath": "github.com/digitalocean/godo",
+			"repository": "https://github.com/digitalocean/godo",
+			"revision": "1124654416c392deb541124a916014a4d8d84cd8",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/go-errors/errors",
 			"repository": "https://github.com/go-errors/errors",
 			"revision": "a41850380601eeb43f4350f7d17c6bbd8944aaf8",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/google/go-querystring/query",
+			"repository": "https://github.com/google/go-querystring",
+			"revision": "9235644dd9e52eeae6fa48efd539fdc351a0af53",
+			"branch": "master",
+			"path": "/query"
 		},
 		{
 			"importpath": "github.com/gorilla/context",
@@ -74,6 +87,39 @@
 			"repository": "https://github.com/stretchr/testify",
 			"revision": "6cb3b85ef5a0efef77caef88363ec4d4b5c0976d",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/tent/http-link-go",
+			"repository": "https://github.com/tent/http-link-go",
+			"revision": "ac974c61c2f990f4115b119354b5e0b47550e888",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "96dbb961a39ddccf16860cdd355bfa639c497f23",
+			"branch": "master",
+			"path": "/context"
+		},
+		{
+			"importpath": "golang.org/x/oauth2",
+			"repository": "https://go.googlesource.com/oauth2",
+			"revision": "e86e2718db89775a4604abc10a5d3a5672e7336e",
+			"branch": "master"
+		},
+		{
+			"importpath": "google.golang.org/cloud/compute/metadata",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "1f12b9c398dff80ed8bd457aeb03aa24d7cf70eb",
+			"branch": "master",
+			"path": "/compute/metadata"
+		},
+		{
+			"importpath": "google.golang.org/cloud/internal",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "1f12b9c398dff80ed8bd457aeb03aa24d7cf70eb",
+			"branch": "master",
+			"path": "/internal"
 		},
 		{
 			"importpath": "gopkg.in/DATA-DOG/go-sqlmock.v1",
