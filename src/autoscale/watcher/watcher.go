@@ -14,19 +14,42 @@ import (
 	"github.com/digitalocean/godo"
 )
 
+// doClient is our interface to digitalocean
+type doClient struct {
+	TagsService     do.TagsService
+	DropletsService do.DropletsService
+}
+
+// dropletConfig is a configurtion for building a droplet.
+type dropletConfig struct {
+	doc   *doClient
+	wg    *sync.WaitGroup
+	log   *logrus.Entry
+	group autoscale.Group
+	tmpl  autoscale.Template
+	tag   string
+}
+
 // Watcher watches groups.
 type Watcher struct {
-	repo       autoscale.Repository
-	log        *logrus.Entry
-	godoClient *godo.Client
+	repo     autoscale.Repository
+	log      *logrus.Entry
+	doClient *doClient
 }
 
 // New creates an instance of Watcher.
 func New(pat string, repo autoscale.Repository) *Watcher {
+	godoClient := createClient(pat)
+
+	dc := &doClient{
+		DropletsService: do.NewDropletsService(godoClient),
+		TagsService:     do.NewTagsService(godoClient),
+	}
+
 	return &Watcher{
-		repo:       repo,
-		log:        logrus.WithField("action", "watcher"),
-		godoClient: createClient(pat),
+		repo:     repo,
+		log:      logrus.WithField("action", "watcher"),
+		doClient: dc,
 	}
 }
 
@@ -43,23 +66,23 @@ func (w *Watcher) Watch() {
 		log := log.WithField("group-name", group.Name)
 		log.Info("watching group")
 
-		if err := w.Check(group, log); err != nil {
-			log.WithError(err).Error("failed group check")
-		}
+		w.Check(group, log)
 	}
 }
 
 // Check group to make sure it is at capacity.
-func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) error {
-	ds := do.NewDropletsService(w.godoClient)
-	ts := do.NewTagsService(w.godoClient)
+func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) {
+	checkMinStatus(g, log, w.doClient, w.repo)
+}
+
+func checkMinStatus(g autoscale.Group, log *logrus.Entry, doc *doClient, repo autoscale.Repository) error {
 
 	tag := fmt.Sprintf("do:as:%s", g.ID)
-	if err := verifyTag(tag, ts, log); err != nil {
+	if err := verifyTag(tag, doc, log); err != nil {
 		return err
 	}
 
-	droplets, err := ds.ListByTag(tag)
+	droplets, err := doc.DropletsService.ListByTag(tag)
 	if err != nil {
 		return err
 	}
@@ -75,14 +98,13 @@ func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) error {
 		n := g.BaseSize - dCount
 		wg.Add(n)
 
-		tmpl, err := w.repo.GetTemplate(g.TemplateName)
+		tmpl, err := repo.GetTemplate(g.TemplateName)
 		if err != nil {
 			return err
 		}
 
 		dc := dropletConfig{
-			ds:    ds,
-			ts:    ts,
+			doc:   doc,
 			wg:    &wg,
 			log:   log,
 			group: g,
@@ -102,16 +124,6 @@ func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) error {
 	}
 
 	return nil
-}
-
-type dropletConfig struct {
-	ds    do.DropletsService
-	ts    do.TagsService
-	wg    *sync.WaitGroup
-	log   *logrus.Entry
-	group autoscale.Group
-	tmpl  autoscale.Template
-	tag   string
 }
 
 func bootDroplet(dc *dropletConfig) {
@@ -140,7 +152,7 @@ func bootDroplet(dc *dropletConfig) {
 
 	log.Info("creating droplet")
 
-	droplet, err := dc.ds.Create(&dcr, true)
+	droplet, err := dc.doc.DropletsService.Create(&dcr, true)
 	if err != nil {
 		log.WithError(err).Error("unable to create droplet")
 	}
@@ -159,14 +171,14 @@ func bootDroplet(dc *dropletConfig) {
 	})
 
 	logWithTag.Info("tagging droplet")
-	if err := dc.ts.TagResources(dc.tag, trr); err != nil {
+	if err := dc.doc.TagsService.TagResources(dc.tag, trr); err != nil {
 		logWithTag.WithError(err).Error("unable to tag droplet")
 	}
 }
 
-func verifyTag(tag string, ts do.TagsService, log *logrus.Entry) error {
+func verifyTag(tag string, doc *doClient, log *logrus.Entry) error {
 	log.WithField("tag", tag).Info("checking if tag exists")
-	tags, err := ts.List()
+	tags, err := doc.TagsService.List()
 	if err != nil {
 		log.WithError(err).Error("unable to list tags")
 		return err
@@ -183,7 +195,7 @@ func verifyTag(tag string, ts do.TagsService, log *logrus.Entry) error {
 	if !tagFound {
 		log.WithField("tag", tag).Info("creating tag")
 		tcr := godo.TagCreateRequest{Name: tag}
-		if _, err := ts.Create(&tcr); err != nil {
+		if _, err := doc.TagsService.Create(&tcr); err != nil {
 			log.WithError(err).WithField("tag", tag).Error("could not create tag")
 			return err
 		}
