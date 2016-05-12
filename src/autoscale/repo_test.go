@@ -85,7 +85,7 @@ func TestGetTemplate(t *testing.T) {
 	mock.ExpectQuery("SELECT (.+) from templates (.+)").
 		WithArgs("a-template").
 		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata"))
+			AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata"))
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
@@ -117,8 +117,8 @@ func TestListTemplates(t *testing.T) {
 
 	mock.ExpectQuery("SELECT (.+) from templates").
 		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("1", "template-1", "dev0", "512mb", "ubuntu-14-04-x64", "1,2", "userdata").
-			AddRow("2", "template-2", "dev0", "512mb", "ubuntu-14-04-x64", "3,4", "userdata"))
+			AddRow("1", "template-1", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata").
+			AddRow("2", "template-2", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("3,4"), "userdata"))
 
 	repo, err := NewRepository(db)
 	assert.NoError(t, err)
