@@ -12,12 +12,12 @@ import (
 
 // Specification describes our expected environment.
 type Specification struct {
-	DBUser      string `envconfig:"db_user"`
-	DBPassword  string `envconfig:"db_password"`
-	DBAddr      string `envconfig:"db_addr"`
-	DBName      string `envconfig:"db_name"`
+	DBUser      string `envconfig:"db_user" required:"true"`
+	DBPassword  string `envconfig:"db_password" required:"true"`
+	DBAddr      string `envconfig:"db_addr" required:"true"`
+	DBName      string `envconfig:"db_name" required:"true"`
 	HTTPAddr    string `envconfig:"http_addr" default:"localhost:8888"`
-	AccessToken string `envconfig:"access_token"`
+	AccessToken string `envconfig:"access_token" required:"true"`
 }
 
 func main() {
