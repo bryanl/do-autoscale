@@ -46,6 +46,7 @@ func New(repo autoscale.Repository) *API {
 	r.HandleFunc("/groups/{id}", a.getGroup).Methods("GET")
 	r.HandleFunc("/groups", a.createGroup).Methods("POST")
 	r.HandleFunc("/groups/{id}", a.deleteGroup).Methods("DELETE")
+	r.HandleFunc("/groups/{id}", a.updateGroup).Methods("PUT")
 
 	return a
 }
@@ -168,5 +169,35 @@ func (a *API) deleteGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(204)
+}
 
+func (a *API) updateGroup(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	defer r.Body.Close()
+
+	var ugr autoscale.UpdateGroupRequest
+	err := json.NewDecoder(r.Body).Decode(&ugr)
+	if err != nil {
+		writeError(w, "invalid update group request", http.StatusBadRequest)
+		return
+	}
+
+	g, err := a.repo.GetGroup(id)
+	if err != nil {
+		writeError(w, "invalid update group request", http.StatusNotFound)
+		return
+	}
+
+	g.BaseSize = ugr.BaseSize
+	err = a.repo.SaveGroup(g)
+	if err != nil {
+		log.WithError(err).Error("update group")
+		writeError(w, "unable to update group", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(&g)
 }

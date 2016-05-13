@@ -2,8 +2,12 @@ package autoscale
 
 import (
 	"database/sql/driver"
+	"fmt"
+	"pkg/doclient"
 	"regexp"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 var (
@@ -51,6 +55,11 @@ type CreateGroupRequest struct {
 	TemplateName string `json:"template_name"`
 }
 
+// UpdateGroupRequest is a group update request.
+type UpdateGroupRequest struct {
+	BaseSize int `json:"base_size"`
+}
+
 // Group is an autoscale group
 type Group struct {
 	ID           string     `json:"ID" db:"id"`
@@ -69,6 +78,14 @@ func (g *Group) IsValid() bool {
 	}
 
 	return true
+}
+
+// Resource is a resource than can be managed for a group.
+func (g *Group) Resource() (Resource, error) {
+	doClient := doclient.New(DOAccessToken())
+	tag := fmt.Sprintf("do:as:%s", g.Name)
+	log := logrus.WithField("group-name", g.Name)
+	return NewDropletResource(doClient, tag, log)
 }
 
 // Template is a template that will be autoscaled.
@@ -94,4 +111,11 @@ func (t *Template) IsValid() bool {
 // LoadConfig is the configuration settings for a load based metric.
 type LoadConfig struct {
 	Utilization float64 `json:"utilization"`
+}
+
+// Resource is a watched resource interface.
+type Resource interface {
+	Actual() (int, error)
+	ScaleUp(g Group, byN int, repo Repository) error
+	ScaleDown(g Group, byN int, repo Repository) error
 }

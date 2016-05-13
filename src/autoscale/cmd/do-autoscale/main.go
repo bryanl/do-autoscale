@@ -4,7 +4,10 @@ import (
 	"autoscale"
 	"autoscale/api"
 	"autoscale/watcher"
+
+	"math/rand"
 	"net/http"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/kelseyhightower/envconfig"
@@ -21,10 +24,16 @@ type Specification struct {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	var s Specification
 	err := envconfig.Process("autoscale", &s)
 	if err != nil {
 		log.WithError(err).Fatal("unable to read environment")
+	}
+
+	autoscale.DOAccessToken = func() string {
+		return s.AccessToken
 	}
 
 	db, err := autoscale.NewDB(s.DBUser, s.DBPassword, s.DBAddr, s.DBName)
@@ -37,10 +46,21 @@ func main() {
 		log.WithError(err).Fatal("unable to setup data repository")
 	}
 
-	watcher := watcher.New(s.AccessToken, repo)
+	watcher := watcher.New(repo)
 	go func() {
-		watcher.Watch()
+		if _, err := watcher.Watch(); err != nil {
+			log.WithError(err).Fatal("unable to start watcher")
+		}
 	}()
+
+	groups, err := repo.ListGroups()
+	if err != nil {
+		log.WithError(err).Error("unable to load groups to watch")
+	}
+
+	for _, group := range groups {
+		watcher.AddGroup(group.Name)
+	}
 
 	a := api.New(repo)
 	http.Handle("/", a.Mux)

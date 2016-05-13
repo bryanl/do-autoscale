@@ -23,6 +23,7 @@ type Repository interface {
 	GetGroup(name string) (Group, error)
 	ListGroups() ([]Group, error)
 	DeleteGroup(name string) error
+	SaveGroup(group Group) error
 }
 
 type pgRepo struct {
@@ -146,6 +147,25 @@ func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 	return g, nil
 }
 
+func (r *pgRepo) SaveGroup(g Group) error {
+	if !g.IsValid() {
+		return errors.New(ValidationErr)
+	}
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sqlUpdateGroup, g.BaseSize, g.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (r *pgRepo) GetGroup(name string) (Group, error) {
 	var g Group
 	if err := r.db.Get(&g, sqlGetGroup, name); err != nil {
@@ -209,4 +229,7 @@ var (
 
 	sqlDeleteGroup = `
   DELETE from groups WHERE id = $1`
+
+	sqlUpdateGroup = `
+  UPDATE groups set base_size = $1 WHERE id = $2`
 )

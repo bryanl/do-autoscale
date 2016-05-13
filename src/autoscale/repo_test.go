@@ -225,3 +225,34 @@ func TestListGroups(t *testing.T) {
 
 	})
 }
+
+func TestDeleteGroup(t *testing.T) {
+	withDBMock(t, func(repo Repository, mock sqlmock.Sqlmock) {
+		mock.ExpectBegin()
+		mock.ExpectExec("DELETE from groups").WithArgs("a-group").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+
+		err := repo.DeleteGroup("a-group")
+		assert.NoError(t, err)
+	})
+}
+
+func TestUpdateGroup(t *testing.T) {
+	withDBMock(t, func(repo Repository, mock sqlmock.Sqlmock) {
+		mock.ExpectBegin()
+		mock.ExpectExec("UPDATE groups").WithArgs(5, "abc").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+
+		g := Group{
+			ID:           "abc",
+			Name:         "group",
+			BaseName:     "as",
+			BaseSize:     5,
+			MetricType:   "load",
+			TemplateName: "a-template",
+		}
+
+		err := repo.SaveGroup(g)
+		assert.NoError(t, err)
+	})
+}

@@ -152,3 +152,15 @@ func (_m *Repository) DeleteGroup(name string) error {
 
 	return r0
 }
+func (_m *Repository) SaveGroup(group autoscale.Group) error {
+	ret := _m.Called(group)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(autoscale.Group) error); ok {
+		r0 = rf(group)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

@@ -240,6 +240,42 @@ func TestDeleteGroup(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+func TestUpdateGroup(t *testing.T) {
+	ogGroup := autoscale.Group{ID: "abc"}
+	ogGroupUpdated := autoscale.Group{ID: "abc", BaseSize: 6}
+
+	repo := &mocks.Repository{}
+	repo.On("GetGroup", "abc").Return(ogGroup, nil)
+	repo.On("SaveGroup", ogGroupUpdated).Return(nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups/abc"
+
+	j := `{
+    "base_size": 6
+  }`
+
+	var buf bytes.Buffer
+	_, err = buf.WriteString(j)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest("PUT", u.String(), &buf)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 200, res.StatusCode)
+
+	repo.AssertExpectations(t)
+}
+
 func TestGetGroup(t *testing.T) {
 	ogGroup := autoscale.Group{ID: "abc"}
 

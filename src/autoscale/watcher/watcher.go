@@ -3,231 +3,193 @@ package watcher
 import (
 	"autoscale"
 	"fmt"
-	"pkg/do"
-	"pkg/util/rand"
-	"strconv"
 	"sync"
 	"time"
 
-	"golang.org/x/oauth2"
-
 	"github.com/Sirupsen/logrus"
-	"github.com/digitalocean/godo"
 )
 
-// doClient is our interface to digitalocean
-type doClient struct {
-	TagsService     do.TagsService
-	DropletsService do.DropletsService
-}
+// TODO write some tests for ths thing
+// TODO pass the resource manager in as a field, so we can divorce it from doClient
 
-// dropletConfig is a configurtion for building a droplet.
-type dropletConfig struct {
-	doc   *doClient
-	wg    *sync.WaitGroup
-	log   *logrus.Entry
-	group autoscale.Group
-	tmpl  autoscale.Template
-	tag   string
+type watchedJob struct {
+	name string
 }
 
 // Watcher watches groups.
 type Watcher struct {
-	repo     autoscale.Repository
-	log      *logrus.Entry
-	doClient *doClient
+	repo       autoscale.Repository
+	log        *logrus.Entry
+	groupNames []string
+	workChan   chan watchedJob
+	quitChan   chan int
+
+	wg sync.Mutex
 }
 
 // New creates an instance of Watcher.
-func New(pat string, repo autoscale.Repository) *Watcher {
-	godoClient := createClient(pat)
-
-	dc := &doClient{
-		DropletsService: do.NewDropletsService(godoClient),
-		TagsService:     do.NewTagsService(godoClient),
-	}
-
+func New(repo autoscale.Repository) *Watcher {
 	return &Watcher{
 		repo:     repo,
 		log:      logrus.WithField("action", "watcher"),
-		doClient: dc,
+		workChan: make(chan watchedJob, 1),
 	}
+}
+
+// AddGroup adds a group to the watch list..
+func (w *Watcher) AddGroup(name string) error {
+	w.wg.Lock()
+	defer w.wg.Unlock()
+
+	for _, n := range w.groupNames {
+		if n == name {
+			return fmt.Errorf("group %s is already being watched", name)
+		}
+	}
+
+	w.groupNames = append(w.groupNames, name)
+
+	w.log.WithField("group-name", name).Info("adding group")
+	w.queueJob(name)
+
+	return nil
+}
+
+func (w *Watcher) queueJob(name string) {
+	job := watchedJob{
+		name: name,
+	}
+
+	w.workChan <- job
+}
+
+// RemoveGroup removes a group from the watch list.
+func (w *Watcher) RemoveGroup(name string) {
+	w.wg.Lock()
+	defer w.wg.Unlock()
+
+	for i, groupName := range w.groupNames {
+		if name == groupName {
+			w.log.WithField("group-name", name).Info("removing group")
+			w.groupNames = append(w.groupNames[:i], w.groupNames[i+1:]...)
+			break
+		}
+	}
+}
+
+// Groups are the currently watched groups.
+func (w *Watcher) Groups() []string {
+	return w.groupNames
 }
 
 // Watch starts the watching process.
-func (w *Watcher) Watch() {
+func (w *Watcher) Watch() (chan bool, error) {
+	w.wg.Lock()
+	defer w.wg.Unlock()
+
 	log := w.log
 
-	groups, err := w.repo.ListGroups()
-	if err != nil {
-		log.WithError(err).Error("list groups")
+	if w.quitChan != nil {
+		log.Warn("watcher is already running")
+		return nil, fmt.Errorf("watcher is already running")
 	}
 
-	for _, group := range groups {
-		log := log.WithField("group-name", group.Name)
-		log.Info("watching group")
+	log.Info("starting watcher")
 
-		go w.Check(group, log)
+	done := make(chan bool, 1)
+	w.quitChan = make(chan int, 1)
+
+	if w.workChan == nil {
+		w.workChan = make(chan watchedJob, 1)
 	}
+
+	go func() {
+
+		for _, name := range w.groupNames {
+			w.queueJob(name)
+		}
+
+		for {
+			select {
+			case job := <-w.workChan:
+				log := log.WithField("group-name", job.name)
+				log.Info("watching group")
+
+				g, err := w.repo.GetGroup(job.name)
+				if err != nil {
+					log.WithError(err).Error("retrieve group")
+				}
+
+				go w.check(g)
+			case <-w.quitChan:
+				log.Info("watcher is shutting down")
+				close(w.workChan)
+				w.quitChan = nil
+				w.workChan = nil
+				done <- true
+				log.Info("watcher is stopped")
+				break
+			}
+		}
+	}()
+
+	return done, nil
+
 }
 
-// Check group to make sure it is at capacity.
-func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) {
-	if err := checkMinStatus(g, log, w.doClient, w.repo); err != nil {
-		log.Error("check failed")
+// Stop stops the watcher.
+func (w *Watcher) Stop() {
+	w.wg.Lock()
+	defer w.wg.Unlock()
+
+	if w.quitChan != nil {
+		w.quitChan <- 1
+	} else {
+		w.log.Info("watcher was not running, so it can't be stopped")
+	}
+
+}
+
+// check group to make sure it is at capacity.
+func (w *Watcher) check(g autoscale.Group) {
+	if err := w.checkMinStatus(g); err != nil {
+		w.log.Error("check failed")
+
+		// TODO figure out how to react to this error
+		return
 	}
 
 	timer := time.NewTimer(10 * time.Second)
 	<-timer.C
-	w.Check(g, log)
+
+	w.queueJob(g.Name)
 }
 
-func checkMinStatus(g autoscale.Group, log *logrus.Entry, doc *doClient, repo autoscale.Repository) error {
+func (w *Watcher) checkMinStatus(g autoscale.Group) error {
+	log := w.log.WithField("group-name", g.Name)
 
-	tag := fmt.Sprintf("do:as:%s", g.ID)
-	if err := verifyTag(tag, doc, log); err != nil {
-		return err
-	}
-
-	droplets, err := doc.DropletsService.ListByTag(tag)
+	resource, err := g.Resource()
 	if err != nil {
 		return err
 	}
 
-	dCount := len(droplets)
-	if dCount < g.BaseSize {
-		log.WithFields(logrus.Fields{
-			"wanted-droplets": g.BaseSize,
-			"actual-droplets": dCount,
-		}).Info("group is missing resources")
+	actual, err := resource.Actual()
+	if err != nil {
+		return err
+	}
 
-		var wg sync.WaitGroup
-		n := g.BaseSize - dCount
-		wg.Add(n)
+	log.WithFields(logrus.Fields{
+		"wanted": g.BaseSize,
+		"actual": actual,
+	}).Info("group status")
 
-		tmpl, err := repo.GetTemplate(g.TemplateName)
-		if err != nil {
-			return err
-		}
+	n := g.BaseSize - actual
 
-		dc := dropletConfig{
-			doc:   doc,
-			wg:    &wg,
-			log:   log,
-			group: g,
-			tmpl:  tmpl,
-			tag:   tag,
-		}
-
-		for i := 0; i < n; i++ {
-			go bootDroplet(&dc)
-		}
-
-		log.Info("waiting droplets to be created")
-		wg.Wait()
-		log.Info("droplets have been created")
-	} else {
-		log.Info("autoscale group exists")
+	if n > 0 {
+		resource.ScaleUp(g, n, w.repo)
+	} else if n < 0 {
+		resource.ScaleDown(g, 0-n, w.repo)
 	}
 
 	return nil
-}
-
-func bootDroplet(dc *dropletConfig) {
-	defer dc.wg.Done()
-	id := rand.String(5)
-
-	name := fmt.Sprintf("%s-%s", dc.group.BaseName, id)
-	log := dc.log.WithFields(logrus.Fields{
-		"droplet-name": name,
-	})
-
-	keys := []godo.DropletCreateSSHKey{}
-	for _, k := range dc.tmpl.SSHKeys {
-		str, _ := strconv.Atoi(k)
-		dcs := godo.DropletCreateSSHKey{ID: str}
-		keys = append(keys, dcs)
-	}
-
-	dcr := godo.DropletCreateRequest{
-		Name:    name,
-		Region:  dc.tmpl.Region,
-		Size:    dc.tmpl.Size,
-		Image:   godo.DropletCreateImage{Slug: dc.tmpl.Image},
-		SSHKeys: keys,
-	}
-
-	log.Info("creating droplet")
-
-	droplet, err := dc.doc.DropletsService.Create(&dcr, true)
-	if err != nil {
-		log.WithError(err).Error("unable to create droplet")
-	}
-
-	log.Info("created droplet")
-
-	trr := &godo.TagResourcesRequest{
-		Resources: []godo.Resource{
-			{ID: strconv.Itoa(droplet.ID), Type: godo.DropletResourceType},
-		},
-	}
-
-	logWithTag := log.WithFields(logrus.Fields{
-		"tag-name":   dc.tag,
-		"droplet-id": droplet.ID,
-	})
-
-	logWithTag.Info("tagging droplet")
-	if err := dc.doc.TagsService.TagResources(dc.tag, trr); err != nil {
-		logWithTag.WithError(err).Error("unable to tag droplet")
-	}
-}
-
-func verifyTag(tag string, doc *doClient, log *logrus.Entry) error {
-	log.WithField("tag", tag).Info("checking if tag exists")
-	tags, err := doc.TagsService.List()
-	if err != nil {
-		log.WithError(err).Error("unable to list tags")
-		return err
-	}
-
-	tagFound := false
-	for _, t := range tags {
-		if t.Name == tag {
-			tagFound = true
-			break
-		}
-	}
-
-	if !tagFound {
-		log.WithField("tag", tag).Info("creating tag")
-		tcr := godo.TagCreateRequest{Name: tag}
-		if _, err := doc.TagsService.Create(&tcr); err != nil {
-			log.WithError(err).WithField("tag", tag).Error("could not create tag")
-			return err
-		}
-	}
-
-	return nil
-}
-
-type tokenSource struct {
-	AccessToken string
-}
-
-// Token creates a token
-func (t *tokenSource) Token() (*oauth2.Token, error) {
-	token := &oauth2.Token{
-		AccessToken: t.AccessToken,
-	}
-	return token, nil
-}
-
-func createClient(pat string) *godo.Client {
-	ts := &tokenSource{
-		AccessToken: pat,
-	}
-
-	oc := oauth2.NewClient(oauth2.NoContext, ts)
-	return godo.NewClient(oc)
 }
