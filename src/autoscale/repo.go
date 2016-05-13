@@ -17,10 +17,12 @@ type Repository interface {
 	CreateTemplate(tcr CreateTemplateRequest) (Template, error)
 	GetTemplate(name string) (Template, error)
 	ListTemplates() ([]Template, error)
+	DeleteTemplate(name string) error
 
 	CreateGroup(gcr CreateGroupRequest) (Group, error)
 	GetGroup(name string) (Group, error)
 	ListGroups() ([]Group, error)
+	DeleteGroup(name string) error
 }
 
 type pgRepo struct {
@@ -53,8 +55,19 @@ func (r *pgRepo) CreateTemplate(tcr CreateTemplateRequest) (Template, error) {
 
 	var id string
 
-	err := r.db.Get(&id, sqlSaveTemplate,
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return Template{}, err
+	}
+
+	err = sqlx.Get(tx, &id, sqlSaveTemplate,
 		t.Name, t.Region, t.Size, t.Image, t.SSHKeys, t.UserData)
+	if err != nil {
+		tx.Rollback()
+		return Template{}, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return Template{}, err
 	}
@@ -81,6 +94,21 @@ func (r *pgRepo) ListTemplates() ([]Template, error) {
 	return ts, nil
 }
 
+func (r *pgRepo) DeleteTemplate(name string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sqlDeleteTemplate, name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 	g := Group{
 		Name:         gcr.Name,
@@ -96,8 +124,19 @@ func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 
 	var id string
 
-	err := r.db.Get(&id, sqlCreateGroup,
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return Group{}, err
+	}
+
+	err = sqlx.Get(tx, &id, sqlCreateGroup,
 		g.Name, g.BaseName, g.BaseSize, g.MetricType, g.TemplateName)
+	if err != nil {
+		tx.Rollback()
+		return Group{}, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return Group{}, err
 	}
@@ -125,6 +164,21 @@ func (r *pgRepo) ListGroups() ([]Group, error) {
 	return ts, nil
 }
 
+func (r *pgRepo) DeleteGroup(name string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sqlDeleteGroup, name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 var (
 	sqlSaveTemplate = `
   INSERT into templates
@@ -138,6 +192,9 @@ var (
 	sqlListTemplates = `
   SELECT * from templates`
 
+	sqlDeleteTemplate = `
+  DELETE from templates WHERE id = $1`
+
 	sqlCreateGroup = `
   INSERT into groups
   (name, base_name, base_size, metric_type, template_name)
@@ -149,4 +206,7 @@ var (
 
 	sqlListGroups = `
   SELECT * from groups`
+
+	sqlDeleteGroup = `
+  DELETE from groups WHERE id = $1`
 )
