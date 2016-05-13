@@ -1,3 +1,3 @@
 # do-autoscale
 
-An experiment wiht autoscaling
+An experiment in autoscaling
