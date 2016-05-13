@@ -130,7 +130,7 @@ func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 	}
 
 	err = sqlx.Get(tx, &id, sqlCreateGroup,
-		g.Name, g.BaseName, g.BaseSize, g.MetricType, g.TemplateName)
+		g.Name, g.BaseName, g.BaseSize, g.MetricType, g.TemplateName, g.ScaleGroup)
 	if err != nil {
 		tx.Rollback()
 		return Group{}, err
@@ -197,8 +197,8 @@ var (
 
 	sqlCreateGroup = `
   INSERT into groups
-  (name, base_name, base_size, metric_type, template_name)
-  VALUES ($1, $2, $3, $4, $5)
+  (name, base_name, base_size, metric_type, template_name, rules)
+  VALUES ($1, $2, $3, $4, $5, $6)
   RETURNING id`
 
 	sqlGetGroup = `

@@ -69,6 +69,18 @@ func (_m *Repository) ListTemplates() ([]autoscale.Template, error) {
 
 	return r0, r1
 }
+func (_m *Repository) DeleteTemplate(name string) error {
+	ret := _m.Called(name)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
 func (_m *Repository) CreateGroup(gcr autoscale.CreateGroupRequest) (autoscale.Group, error) {
 	ret := _m.Called(gcr)
 
@@ -127,4 +139,16 @@ func (_m *Repository) ListGroups() ([]autoscale.Group, error) {
 	}
 
 	return r0, r1
+}
+func (_m *Repository) DeleteGroup(name string) error {
+	ret := _m.Called(name)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }

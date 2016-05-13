@@ -1,6 +1,10 @@
 package autoscale
 
-import "errors"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+)
 
 var (
 	// ErrOverlap is an error for overlapping rules.
@@ -9,12 +13,27 @@ var (
 
 // ScaleGroup is a group of ScaleRules.
 type ScaleGroup struct {
-	rules []ScaleRule
+	Rules []ScaleRule `json:"rules"`
+}
+
+// Value converts a ScaleGroup to JSON to be stored in the database.
+func (sg ScaleGroup) Value() (driver.Value, error) {
+	return json.Marshal(&sg)
+}
+
+// Scan converts a DB value back into a ScaleGroup.
+func (sg *ScaleGroup) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+
+	b := []byte(src.([]uint8))
+	return json.Unmarshal(b, sg)
 }
 
 // FindAction finds an action for a scenario.
 func (sg *ScaleGroup) FindAction(itemCount int, metricValue float64) int {
-	for _, rule := range sg.rules {
+	for _, rule := range sg.Rules {
 		if rule.IsMatch(itemCount, metricValue) {
 			return rule.Step
 		}
@@ -36,7 +55,7 @@ func (sg *ScaleGroup) AddRule(rbl, rbu, step int, mbl, mbu float64) error {
 	}
 	sr.SetMetric(mbl, mbu)
 
-	sg.rules = append(sg.rules, sr)
+	sg.Rules = append(sg.Rules, sr)
 
 	return nil
 }
@@ -44,7 +63,7 @@ func (sg *ScaleGroup) AddRule(rbl, rbu, step int, mbl, mbu float64) error {
 // isOverlap returns true if the specification overlaps with a current rule. Rules
 // overlap when for any item in the rule bounds can have more than one metric.
 func (sg *ScaleGroup) isOverlap(rbl, rbu int, mbl, mbu float64) bool {
-	for _, rule := range sg.rules {
+	for _, rule := range sg.Rules {
 		isBoundMatch := rule.Bounds.Lower <= rbl && rule.Bounds.Upper >= rbu
 		isMetricMatch := rule.Metric.Bounds.Lower <= mbl && rule.Metric.Bounds.Upper >= mbu
 		if isBoundMatch && isMetricMatch {
@@ -57,9 +76,9 @@ func (sg *ScaleGroup) isOverlap(rbl, rbu int, mbl, mbu float64) bool {
 
 // ScaleRule handles lower and upper bounds for items which are scaleable.
 type ScaleRule struct {
-	Bounds IntBounds
-	Step   int
-	Metric ScaleMetric
+	Bounds IntBounds   `json:"bounds"`
+	Step   int         `json:"step"`
+	Metric ScaleMetric `json:"metric"`
 }
 
 // IsMatch matches a Metric rule against an itemCount and a metricValue.
@@ -79,13 +98,13 @@ func (sr *ScaleRule) SetMetric(lower, upper float64) {
 
 // ScaleMetric handles lower and upper bounds for metrics.
 type ScaleMetric struct {
-	Bounds FloatBounds
+	Bounds FloatBounds `json:"bounds"`
 }
 
 // FloatBounds are an upper and lower threshold.
 type FloatBounds struct {
-	Lower float64
-	Upper float64
+	Lower float64 `json:"lower"`
+	Upper float64 `json:"upper"`
 }
 
 // IsValid returns if a FloatBounds is valid or not. A Bounds is valid if
@@ -102,8 +121,8 @@ func (b *FloatBounds) Includes(item float64) bool {
 
 // IntBounds are an upper and lower threshold.
 type IntBounds struct {
-	Lower int
-	Upper int
+	Lower int `json:"lower"`
+	Upper int `json:"upper"`
 }
 
 // IsValid returns if an IntBounds is valid or not. A Bounds is valid if

@@ -43,6 +43,32 @@ func TestListTemplates(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, tmpls, 2)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDeleteTemplate(t *testing.T) {
+	repo := &mocks.Repository{}
+	repo.On("DeleteTemplate", "1").Return(nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/templates/1"
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 204, res.StatusCode)
+
+	repo.AssertExpectations(t)
 }
 
 func TestGetTemplate(t *testing.T) {
@@ -71,6 +97,8 @@ func TestGetTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", tmpl.ID)
+
+	repo.AssertExpectations(t)
 }
 
 func TestGetMissingTemplate(t *testing.T) {
@@ -91,6 +119,8 @@ func TestGetMissingTemplate(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, 404, res.StatusCode)
+
+	repo.AssertExpectations(t)
 }
 
 func TestCreateTemplate(t *testing.T) {
@@ -149,6 +179,8 @@ func TestCreateTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, tmpl, newTmpl)
+
+	repo.AssertExpectations(t)
 }
 
 func TestListGroups(t *testing.T) {
@@ -180,6 +212,32 @@ func TestListGroups(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, groups, 2)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDeleteGroup(t *testing.T) {
+	repo := &mocks.Repository{}
+	repo.On("DeleteGroup", "abc").Return(nil)
+
+	api := New(repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	assert.NoError(t, err)
+	u.Path = "/groups/abc"
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 204, res.StatusCode)
+
+	repo.AssertExpectations(t)
 }
 
 func TestGetGroup(t *testing.T) {
@@ -208,6 +266,8 @@ func TestGetGroup(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "abc", group.ID)
+
+	repo.AssertExpectations(t)
 }
 
 func TestGetMissingGroup(t *testing.T) {
@@ -228,6 +288,8 @@ func TestGetMissingGroup(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, 404, res.StatusCode)
+
+	repo.AssertExpectations(t)
 }
 
 func TestCreateGroup(t *testing.T) {
@@ -283,4 +345,6 @@ func TestCreateGroup(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, newGroup, group)
+
+	repo.AssertExpectations(t)
 }

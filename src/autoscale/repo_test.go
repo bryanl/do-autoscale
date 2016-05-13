@@ -1,6 +1,7 @@
 package autoscale
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/go-errors/errors"
@@ -131,10 +132,15 @@ func TestDeleteTemplate(t *testing.T) {
 
 func TestCreateGroup(t *testing.T) {
 	withDBMock(t, func(repo Repository, mock sqlmock.Sqlmock) {
+
+		sg := ScaleGroup{}
+		b, err := json.Marshal(&sg)
+		assert.NoError(t, err)
+
 		mock.ExpectBegin()
 		mock.ExpectQuery("INSERT into groups (.+) RETURNING id").
 			WithArgs("id").
-			WithArgs("group", "as", 3, "load", "a-template").
+			WithArgs("group", "as", 3, "load", "a-template", []uint8(b)).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("abcdefg"))
 		mock.ExpectCommit()
 
@@ -181,12 +187,12 @@ func TestCreateGroup_InvalidName(t *testing.T) {
 
 func TestGetGroup(t *testing.T) {
 	withDBMock(t, func(repo Repository, mock sqlmock.Sqlmock) {
-		columns := []string{"id", "name", "base_name", "base_size", "metric_type", "template_name"}
+		columns := []string{"id", "name", "base_name", "base_size", "metric_type", "template_name", "rules"}
 
 		mock.ExpectQuery("SELECT (.+) from groups (.+)").
 			WithArgs("as").
 			WillReturnRows(sqlmock.NewRows(columns).
-				AddRow("abc", "group", "as", 3, "load", "a-template"))
+				AddRow("abc", "group", "as", 3, "load", "a-template", []uint8(`{}`)))
 
 		ogGroup := Group{
 			ID:           "abc",

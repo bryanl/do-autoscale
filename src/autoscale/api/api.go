@@ -41,9 +41,11 @@ func New(repo autoscale.Repository) *API {
 	r.HandleFunc("/templates", a.listTemplates).Methods("GET")
 	r.HandleFunc("/templates/{id}", a.getTemplate).Methods("GET")
 	r.HandleFunc("/templates", a.createTemplate).Methods("POST")
+	r.HandleFunc("/templates/{id}", a.deleteTemplate).Methods("DELETE")
 	r.HandleFunc("/groups", a.listGroups).Methods("GET")
 	r.HandleFunc("/groups/{id}", a.getGroup).Methods("GET")
 	r.HandleFunc("/groups", a.createGroup).Methods("POST")
+	r.HandleFunc("/groups/{id}", a.deleteGroup).Methods("DELETE")
 
 	return a
 }
@@ -94,6 +96,20 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(&tmpl)
 }
 
+func (a *API) deleteTemplate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := a.repo.DeleteTemplate(id)
+	if err != nil {
+		log.WithError(err).Error("delete template")
+		writeError(w, "unable to delete template", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(204)
+}
+
 func (a *API) listGroups(w http.ResponseWriter, r *http.Request) {
 	groups, err := a.repo.ListGroups()
 	if err != nil {
@@ -138,4 +154,19 @@ func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(&g)
+}
+
+func (a *API) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := a.repo.DeleteGroup(id)
+	if err != nil {
+		log.WithError(err).Error("delete group")
+		writeError(w, "unable to delete group", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(204)
+
 }

@@ -53,12 +53,13 @@ type CreateGroupRequest struct {
 
 // Group is an autoscale group
 type Group struct {
-	ID           string `json:"ID" db:"id"`
-	Name         string `json:"name" db:"name"`
-	BaseName     string `json:"base_name" db:"base_name"`
-	BaseSize     int    `json:"base_size" db:"base_size"`
-	MetricType   string `json:"metric_type" db:"metric_type"`
-	TemplateName string `json:"template_name" db:"template_name"`
+	ID           string     `json:"ID" db:"id"`
+	Name         string     `json:"name" db:"name"`
+	BaseName     string     `json:"base_name" db:"base_name"`
+	BaseSize     int        `json:"base_size" db:"base_size"`
+	MetricType   string     `json:"metric_type" db:"metric_type"`
+	TemplateName string     `json:"template_name" db:"template_name"`
+	ScaleGroup   ScaleGroup `json:"scale_group" db:"rules"`
 }
 
 // IsValid returns if the template is valid or not.
