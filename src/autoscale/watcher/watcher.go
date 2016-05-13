@@ -7,6 +7,7 @@ import (
 	"pkg/util/rand"
 	"strconv"
 	"sync"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -66,13 +67,19 @@ func (w *Watcher) Watch() {
 		log := log.WithField("group-name", group.Name)
 		log.Info("watching group")
 
-		w.Check(group, log)
+		go w.Check(group, log)
 	}
 }
 
 // Check group to make sure it is at capacity.
 func (w *Watcher) Check(g autoscale.Group, log *logrus.Entry) {
-	checkMinStatus(g, log, w.doClient, w.repo)
+	if err := checkMinStatus(g, log, w.doClient, w.repo); err != nil {
+		log.Error("check failed")
+	}
+
+	timer := time.NewTimer(10 * time.Second)
+	<-timer.C
+	w.Check(g, log)
 }
 
 func checkMinStatus(g autoscale.Group, log *logrus.Entry, doc *doClient, repo autoscale.Repository) error {
