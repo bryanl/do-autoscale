@@ -2,6 +2,7 @@ package autoscale
 
 import (
 	"fmt"
+	"pkg/cloudinit"
 	"pkg/doclient"
 	"pkg/util/rand"
 	"pkg/util/shuffle"
@@ -25,6 +26,7 @@ type dropletConfig struct {
 	groupName string
 	template  Template
 	tag       string
+	userData  string
 }
 
 // DropletResource watches Droplets.
@@ -114,6 +116,8 @@ func (r *DropletResource) ScaleDown(g Group, byN int, repo Repository) error {
 		}
 	}
 
+	r.log.Info("scale down complete")
+
 	return nil
 }
 
@@ -133,12 +137,33 @@ func bootDroplet(dc *dropletConfig) {
 		keys = append(keys, dcs)
 	}
 
+	ci := cloudinit.New()
+	if err := ci.AddPart(cloudinit.MIMETypeShellScript, "ud1.txt", asUserData); err != nil {
+		log.WithError(err).Error("unable to add autoscaling to cloud init")
+		return
+	}
+
+	if len(dc.userData) > 0 {
+		if err := ci.AddPart(cloudinit.MIMETypeUnknown, "ud2.txt", dc.userData); err != nil {
+			log.WithError(err).Error("unable to add customer user data to cloud init")
+			return
+		}
+	}
+
+	if err := ci.Close(); err != nil {
+		log.WithError(err).Error("unable to close cloudinit")
+		return
+	}
+
+	userData := ci.String()
+
 	dcr := godo.DropletCreateRequest{
-		Name:    name,
-		Region:  dc.template.Region,
-		Size:    dc.template.Size,
-		Image:   godo.DropletCreateImage{Slug: dc.template.Image},
-		SSHKeys: keys,
+		Name:     name,
+		Region:   dc.template.Region,
+		Size:     dc.template.Size,
+		Image:    godo.DropletCreateImage{Slug: dc.template.Image},
+		SSHKeys:  keys,
+		UserData: userData,
 	}
 
 	log.Info("creating droplet")
@@ -146,6 +171,7 @@ func bootDroplet(dc *dropletConfig) {
 	droplet, err := dc.doc.DropletsService.Create(&dcr, true)
 	if err != nil {
 		log.WithError(err).Error("unable to create droplet")
+		return
 	}
 
 	log.Info("created droplet")
@@ -194,3 +220,19 @@ func verifyTag(tag string, doc *doclient.Client, log *logrus.Entry) error {
 
 	return nil
 }
+
+var (
+	asUserData = `#!/usr/bin/env bash
+  version=0.12.0
+  binName=node_exporter-${version}.linux-amd64.tar.gz
+  dlPath=/tmp
+  distURL=https://github.com/prometheus/node_exporter/releases/download/${version}/${binName}
+
+  curl -s -L -o ${dlPath}/${binName} ${distURL}
+  mkdir -p /opt
+  tar -C /opt -xzf ${dlPath}/${binName}
+
+  curl -S -L -o /etc/init/node_exporter.conf https://gist.githubusercontent.com/bryanl/8cd63b1aa0f80d5dcb0f14abbb476f25/raw/51d706b0404cc9c20df9722c6dd3f9c52a296df9/node_exporter-upstart.conf
+  start node_exporter
+  `
+)
