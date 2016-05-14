@@ -1,6 +1,7 @@
 package autoscale
 
 import (
+	"autoscale/metrics"
 	"fmt"
 	"pkg/cloudinit"
 	"pkg/doclient"
@@ -36,7 +37,7 @@ type DropletResource struct {
 	log      *logrus.Entry
 }
 
-var _ Resource = (*DropletResource)(nil)
+var _ ResourceManager = (*DropletResource)(nil)
 
 // NewDropletResource creates an instance of WatchedDropletResource.
 func NewDropletResource(doClient *doclient.Client, tag string, log *logrus.Entry) (*DropletResource, error) {
@@ -119,6 +120,31 @@ func (r *DropletResource) ScaleDown(g Group, byN int, repo Repository) error {
 	r.log.Info("scale down complete")
 
 	return nil
+}
+
+// Allocated returns the allocated droplets.
+func (r *DropletResource) Allocated() ([]metrics.ResourceAllocation, error) {
+	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
+	if err != nil {
+		return nil, err
+	}
+
+	allocations := []metrics.ResourceAllocation{}
+	for _, droplet := range droplets {
+		ip, err := droplet.PublicIPv4()
+		if err != nil {
+			return nil, err
+		}
+
+		allocation := metrics.ResourceAllocation{
+			Name:    droplet.Name,
+			Address: ip,
+		}
+
+		allocations = append(allocations, allocation)
+	}
+
+	return allocations, nil
 }
 
 func bootDroplet(dc *dropletConfig) {

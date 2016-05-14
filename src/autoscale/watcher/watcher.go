@@ -9,9 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-// TODO write some tests for ths thing
-// TODO pass the resource manager in as a field, so we can divorce it from doClient
-
 type watchedJob struct {
 	name string
 }
@@ -104,7 +101,6 @@ func (w *Watcher) Watch() (chan bool, error) {
 	}
 
 	go func() {
-
 		for _, name := range w.groupNames {
 			w.queueJob(name)
 		}
@@ -120,7 +116,7 @@ func (w *Watcher) Watch() (chan bool, error) {
 					log.WithError(err).Error("retrieve group")
 				}
 
-				go w.check(g)
+				go w.queueCheck(g)
 			case <-w.quitChan:
 				log.Info("watcher is shutting down")
 				close(w.workChan)
@@ -151,8 +147,8 @@ func (w *Watcher) Stop() {
 }
 
 // check group to make sure it is at capacity.
-func (w *Watcher) check(g autoscale.Group) {
-	if err := w.checkMinStatus(g); err != nil {
+func (w *Watcher) queueCheck(g autoscale.Group) {
+	if err := w.check(g); err != nil {
 		w.log.Error("check failed")
 
 		// TODO figure out how to react to this error
@@ -165,7 +161,7 @@ func (w *Watcher) check(g autoscale.Group) {
 	w.queueJob(g.Name)
 }
 
-func (w *Watcher) checkMinStatus(g autoscale.Group) error {
+func (w *Watcher) check(g autoscale.Group) error {
 	log := w.log.WithField("group-name", g.Name)
 
 	resource, err := g.Resource()
@@ -187,9 +183,21 @@ func (w *Watcher) checkMinStatus(g autoscale.Group) error {
 
 	if n > 0 {
 		resource.ScaleUp(g, n, w.repo)
+		g.NotifyMetrics()
 	} else if n < 0 {
 		resource.ScaleDown(g, 0-n, w.repo)
+		g.NotifyMetrics()
 	}
+
+	value, err := g.MetricsValue()
+	if err != nil {
+		return err
+	}
+
+	log.WithFields(logrus.Fields{
+		"metric":       g.MetricType,
+		"metric-value": value,
+	}).Info("current metric value")
 
 	return nil
 }

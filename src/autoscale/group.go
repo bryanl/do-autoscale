@@ -1,6 +1,7 @@
 package autoscale
 
 import (
+	"autoscale/metrics"
 	"database/sql/driver"
 	"fmt"
 	"pkg/doclient"
@@ -81,11 +82,51 @@ func (g *Group) IsValid() bool {
 }
 
 // Resource is a resource than can be managed for a group.
-func (g *Group) Resource() (Resource, error) {
+func (g *Group) Resource() (ResourceManager, error) {
 	doClient := doclient.New(DOAccessToken())
 	tag := fmt.Sprintf("do:as:%s", g.Name)
 	log := logrus.WithField("group-name", g.Name)
 	return NewDropletResource(doClient, tag, log)
+}
+
+// NotifyMetrics notifies the metrics system that the instance configuration has changed.
+func (g *Group) NotifyMetrics() error {
+	r, err := g.Resource()
+	if err != nil {
+		return err
+	}
+
+	allocated, err := r.Allocated()
+	if err != nil {
+		return err
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"group-name":  g.Name,
+		"metric-type": g.MetricType,
+	}).Info("fetching metric for group")
+	gen, ok := metrics.Available()[g.MetricType]
+	if !ok {
+		return fmt.Errorf("uanable to find metrics type %q", g.MetricType)
+	}
+
+	m := gen(nil)
+	return m.Update(g.Name, allocated)
+}
+
+// MetricsValue retrieves current metric value for group.
+func (g *Group) MetricsValue() (float64, error) {
+	logrus.WithFields(logrus.Fields{
+		"group-name":  g.Name,
+		"metric-type": g.MetricType,
+	}).Info("fetching metric value for group")
+	gen, ok := metrics.Available()[g.MetricType]
+	if !ok {
+		return 0, fmt.Errorf("uanable to find metrics type %q", g.MetricType)
+	}
+
+	m := gen(nil)
+	return m.Value(g.Name)
 }
 
 // Template is a template that will be autoscaled.
@@ -113,9 +154,10 @@ type LoadConfig struct {
 	Utilization float64 `json:"utilization"`
 }
 
-// Resource is a watched resource interface.
-type Resource interface {
+// ResourceManager is a watched resource interface.
+type ResourceManager interface {
 	Actual() (int, error)
 	ScaleUp(g Group, byN int, repo Repository) error
 	ScaleDown(g Group, byN int, repo Repository) error
+	Allocated() ([]metrics.ResourceAllocation, error)
 }
