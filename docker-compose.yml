@@ -1,0 +1,29 @@
+version: '2'
+
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=TVLqAAB6kxKKynQ6
+      - POSTGRES_DB=autoscale
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/postgres:/var/lib/postgresql/data
+    networks:
+      - autoscale
+
+  prometheus:
+    image: prom/prometheus
+    command: -config.file=/etc/prometheus/prometheus.yml -storage.local.path=/prometheus -storage.local.memory-chunks=10000
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prom-configs:/etc/prometheus/configs
+      - ./config/prometheus.yml:/etc/prometheus/prometheus
+    networks:
+      - autoscale
+
+networks:
+  autoscale:
+    driver: bridge
