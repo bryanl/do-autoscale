@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	// AccessToken is the access token that will be used to interact with DigitalOcean.
+	// DOAccessToken is the access token that will be used to interact with DigitalOcean.
 	DOAccessToken func() string
 )
 

@@ -3,6 +3,7 @@ package main
 import (
 	"autoscale"
 	"autoscale/api"
+	"autoscale/metrics"
 	"autoscale/watcher"
 
 	"math/rand"
@@ -15,12 +16,15 @@ import (
 
 // Specification describes our expected environment.
 type Specification struct {
-	DBUser      string `envconfig:"db_user" required:"true"`
-	DBPassword  string `envconfig:"db_password" required:"true"`
-	DBAddr      string `envconfig:"db_addr" required:"true"`
-	DBName      string `envconfig:"db_name" required:"true"`
-	HTTPAddr    string `envconfig:"http_addr" default:"localhost:8888"`
-	AccessToken string `envconfig:"access_token" required:"true"`
+	DBUser             string `envconfig:"db_user" required:"true"`
+	DBPassword         string `envconfig:"db_password" required:"true"`
+	DBAddr             string `envconfig:"db_addr" required:"true"`
+	DBName             string `envconfig:"db_name" required:"true"`
+	HTTPAddr           string `envconfig:"http_addr" default:"localhost:8888"`
+	AccessToken        string `envconfig:"access_token" required:"true"`
+	UseFileStats       bool   `envconfig:"use_file_stats" default:"false"`
+	FileStatDir        string `envconfig:"file_stat_dir"`
+	UseMemoryResources bool   `envconfig:"use_memory_resources" default:"false"`
 }
 
 func main() {
@@ -31,6 +35,15 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("unable to read environment")
 	}
+
+	if s.UseMemoryResources {
+		log.Info("using memory resources")
+		autoscale.ResourceManagerFactory = func(g *autoscale.Group) (autoscale.ResourceManager, error) {
+			return autoscale.NewLocalResource(), nil
+		}
+	}
+
+	metrics.RegisterDefaultMetrics()
 
 	autoscale.DOAccessToken = func() string {
 		return s.AccessToken

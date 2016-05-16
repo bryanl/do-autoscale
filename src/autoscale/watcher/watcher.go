@@ -149,7 +149,7 @@ func (w *Watcher) Stop() {
 // check group to make sure it is at capacity.
 func (w *Watcher) queueCheck(g autoscale.Group) {
 	if err := w.check(g); err != nil {
-		w.log.Error("check failed")
+		w.log.WithError(err).Error("check failed")
 
 		// TODO figure out how to react to this error
 		return

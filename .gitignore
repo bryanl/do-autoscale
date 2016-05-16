@@ -1,5 +1,5 @@
 .vscode
 bin
-./pkg
+/pkg
 vendor/pkg
 docker-compose.yml

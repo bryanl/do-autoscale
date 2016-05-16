@@ -13,7 +13,18 @@ import (
 
 var (
 	nameRe = regexp.MustCompile(`^\w[A-Za-z0-9\-]*$`)
+
+	// ResourceManagerFactory creates a ResourceManager given a group.
+	ResourceManagerFactory ResourceManagerFactoryFn = func(g *Group) (ResourceManager, error) {
+		doClient := doclient.New(DOAccessToken())
+		tag := fmt.Sprintf("do:as:%s", g.Name)
+		log := logrus.WithField("group-name", g.Name)
+		return NewDropletResource(doClient, tag, log)
+	}
 )
+
+// ResourceManagerFactoryFn is a function that returns ResourceManagerFactory.
+type ResourceManagerFactoryFn func(g *Group) (ResourceManager, error)
 
 // StringSlice is a slice of strings
 type StringSlice []string
@@ -83,10 +94,7 @@ func (g *Group) IsValid() bool {
 
 // Resource is a resource than can be managed for a group.
 func (g *Group) Resource() (ResourceManager, error) {
-	doClient := doclient.New(DOAccessToken())
-	tag := fmt.Sprintf("do:as:%s", g.Name)
-	log := logrus.WithField("group-name", g.Name)
-	return NewDropletResource(doClient, tag, log)
+	return ResourceManagerFactory(g)
 }
 
 // NotifyMetrics notifies the metrics system that the instance configuration has changed.
@@ -105,12 +113,13 @@ func (g *Group) NotifyMetrics() error {
 		"group-name":  g.Name,
 		"metric-type": g.MetricType,
 	}).Info("fetching metric for group")
-	gen, ok := metrics.Available()[g.MetricType]
-	if !ok {
-		return fmt.Errorf("uanable to find metrics type %q", g.MetricType)
+
+	m, err := metrics.Retrieve(g.MetricType)
+	if err != nil {
+		logrus.WithError(err).WithField("metric-type", g.MetricType).Error("unable to retrieve metric")
+		return err
 	}
 
-	m := gen(nil)
 	return m.Update(g.Name, allocated)
 }
 
@@ -120,12 +129,13 @@ func (g *Group) MetricsValue() (float64, error) {
 		"group-name":  g.Name,
 		"metric-type": g.MetricType,
 	}).Info("fetching metric value for group")
-	gen, ok := metrics.Available()[g.MetricType]
-	if !ok {
-		return 0, fmt.Errorf("uanable to find metrics type %q", g.MetricType)
+
+	m, err := metrics.Retrieve(g.MetricType)
+	if err != nil {
+		logrus.WithError(err).WithField("metric-type", g.MetricType).Error("unable to retrieve metric")
+		return 0, err
 	}
 
-	m := gen(nil)
 	return m.Value(g.Name)
 }
 
