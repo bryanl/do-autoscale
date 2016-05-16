@@ -3,3 +3,6 @@ bin
 /pkg
 vendor/pkg
 docker-compose.yml
+
+config/prom-configs/*
+!config/prom-configs/.gitkeep

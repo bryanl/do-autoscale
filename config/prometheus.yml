@@ -1,0 +1,15 @@
+
+# A scrape configuration scraping a Node Exporter and the Prometheus server
+# itself.
+scrape_configs:
+  # Scrape Prometheus itself every 5 seconds.
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    target_groups:
+      - targets: ['localhost:9090']
+
+  - job_name: 'autoscale'
+    scrape_interval: 1s
+    file_sd_configs:
+      - names: ['/etc/prometheus/configs/*.json']
+
