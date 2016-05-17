@@ -2,8 +2,27 @@ package metrics
 
 import (
 	"fmt"
+	"pkg/ctxutil"
+
+	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
+)
+
+const (
+	defaultFileLoadPath = "/tmp"
+)
+
+const (
+	// OptionFileLoadPath is a file load path option.
+	OptionFileLoadPath = iota
+)
+
+var (
+	metrics = map[string]Metrics{}
+
+	// DefaultConfig is the default configuration for metrics.
+	DefaultConfig = Config{}
 )
 
 // ResourceAllocation is information about an allocated resource.
@@ -12,9 +31,8 @@ type ResourceAllocation struct {
 	Address string
 }
 
-var (
-	metrics = map[string]Metrics{}
-)
+// Config is configuration for metrics
+type Config map[int]interface{}
 
 // Retrieve retrieves the currently configured metrics.
 func Retrieve(metricType string) (Metrics, error) {
@@ -25,12 +43,6 @@ func Retrieve(metricType string) (Metrics, error) {
 
 	return m, nil
 }
-
-// Gen is a generator for metrics types.
-type Gen func(*Config) Metrics
-
-// Config is instance configuration for metrics.
-type Config map[string]interface{}
 
 // Metrics pull metrics for a autoscaler.
 type Metrics interface {
@@ -47,12 +59,29 @@ func RegisterMetric(name string, m Metrics) {
 	metrics[name] = m
 }
 
-// RegisterDefaultMetrics registers a default set of metrics.
-func RegisterDefaultMetrics() {
-	m, err := NewFileLoad("/tmp")
+// RegisterOfflineMetrics registers an offline set of metrics.
+func RegisterOfflineMetrics(ctx context.Context) {
+	log := ctxutil.LogFromContext(ctx)
+	var path = defaultFileLoadPath
+	if p, ok := DefaultConfig[OptionFileLoadPath]; ok {
+		path = p.(string)
+	}
+
+	m, err := NewFileLoad(path)
 	if err != nil {
-		logrus.WithError(err).Error("unable to register file based load metric")
+		log.WithError(err).Error("unable to register file based load metric")
 		return
+	}
+
+	RegisterMetric("load", m)
+}
+
+// RegisterDefaultMetrics registers a default set of metrics.
+func RegisterDefaultMetrics(ctx context.Context) {
+	log := ctxutil.LogFromContext(ctx)
+	m, err := NewPrometheusLoad()
+	if err != nil {
+		log.WithError(err).Error("unable to register prometheus based load metric")
 	}
 
 	RegisterMetric("load", m)

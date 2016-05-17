@@ -3,6 +3,10 @@ package autoscale
 import (
 	"autoscale/metrics"
 	"fmt"
+	"math/rand"
+	"pkg/ctxutil"
+
+	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -16,9 +20,19 @@ type LocalResource struct {
 var _ ResourceManager = (*LocalResource)(nil)
 
 // NewLocalResource builds an instance of LocalResource.
-func NewLocalResource() ResourceManager {
+func NewLocalResource(ctx context.Context) ResourceManager {
+	log := ctxutil.LogFromContext(ctx)
+	if log == nil {
+		l := logrus.New()
+		log = logrus.NewEntry(l)
+	}
+
+	id := rand.Int()
+
+	log = log.WithField("resource-type", "local").WithField("id", id)
+
 	return &LocalResource{
-		log: logrus.WithField("resource-type", "local"),
+		log: log,
 	}
 }
 
@@ -32,7 +46,7 @@ func (r *LocalResource) Actual() (int, error) {
 func (r *LocalResource) ScaleUp(g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling up")
 
-	r.count += byN
+	r.count = r.count + byN
 	return nil
 }
 
@@ -40,7 +54,7 @@ func (r *LocalResource) ScaleUp(g Group, byN int, repo Repository) error {
 func (r *LocalResource) ScaleDown(g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling down")
 
-	r.count -= byN
+	r.count = r.count - byN
 	return nil
 }
 

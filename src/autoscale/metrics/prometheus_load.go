@@ -41,6 +41,11 @@ func (pr *prometheusResult) Value() (float64, error) {
 type PrometheusLoad struct {
 }
 
+// NewPrometheusLoad creates an instance of PrometheusLoad.
+func NewPrometheusLoad() (*PrometheusLoad, error) {
+	return &PrometheusLoad{}, nil
+}
+
 var _ Metrics = (*PrometheusLoad)(nil)
 
 // Value returns the average load for an entire group.

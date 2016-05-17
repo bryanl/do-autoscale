@@ -9,6 +9,10 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
+var (
+	groupWatchDuration = 5 * time.Second
+)
+
 type watchedJob struct {
 	name string
 }
@@ -24,12 +28,16 @@ type Watcher struct {
 	wg sync.Mutex
 }
 
+func makeJobQueue() chan watchedJob {
+	return make(chan watchedJob, 1000)
+}
+
 // New creates an instance of Watcher.
 func New(repo autoscale.Repository) *Watcher {
 	return &Watcher{
 		repo:     repo,
 		log:      logrus.WithField("action", "watcher"),
-		workChan: make(chan watchedJob, 1),
+		workChan: makeJobQueue(),
 	}
 }
 
@@ -53,6 +61,7 @@ func (w *Watcher) AddGroup(name string) error {
 }
 
 func (w *Watcher) queueJob(name string) {
+	w.log.WithField("name", name).Info("queueing job")
 	job := watchedJob{
 		name: name,
 	}
@@ -96,8 +105,10 @@ func (w *Watcher) Watch() (chan bool, error) {
 	done := make(chan bool, 1)
 	w.quitChan = make(chan int, 1)
 
+	groupWatchTicker := time.NewTicker(groupWatchDuration)
+
 	if w.workChan == nil {
-		w.workChan = make(chan watchedJob, 1)
+		w.workChan = makeJobQueue()
 	}
 
 	go func() {
@@ -117,6 +128,17 @@ func (w *Watcher) Watch() (chan bool, error) {
 				}
 
 				go w.queueCheck(g)
+
+			case <-groupWatchTicker.C:
+				groups, err := w.repo.ListGroups()
+				if err != nil {
+					log.WithError(err).Error("unable to load groups to watch")
+				}
+
+				for _, group := range groups {
+					w.AddGroup(group.Name)
+				}
+
 			case <-w.quitChan:
 				log.Info("watcher is shutting down")
 				close(w.workChan)
@@ -148,14 +170,21 @@ func (w *Watcher) Stop() {
 
 // check group to make sure it is at capacity.
 func (w *Watcher) queueCheck(g autoscale.Group) {
-	if err := w.check(g); err != nil {
-		w.log.WithError(err).Error("check failed")
+	checkDelay := 10 * time.Second
 
-		// TODO figure out how to react to this error
-		return
+	if err := w.check(g); err != nil {
+		checkDelay = 15 * time.Second
+		w.log.
+			WithError(err).
+			WithField("delay", checkDelay).
+			Error("check failed and will be tried again")
+	} else {
+		w.log.
+			WithField("delay", checkDelay).
+			Info("scheduling future check")
 	}
 
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(checkDelay)
 	<-timer.C
 
 	w.queueJob(g.Name)
