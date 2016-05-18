@@ -53,7 +53,7 @@ func NewDropletResource(doClient *doclient.Client, tag string, log *logrus.Entry
 }
 
 // Actual returns the amount of actual Droplets.
-func (r *DropletResource) Actual() (int, error) {
+func (r *DropletResource) Count() (int, error) {
 	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
 	if err != nil {
 		return 0, err
@@ -62,8 +62,19 @@ func (r *DropletResource) Actual() (int, error) {
 	return len(droplets), nil
 }
 
+// Scale sclaes DropletResources byN.
+func (r *DropletResource) Scale(g Group, byN int, repo Repository) error {
+	if byN > 0 {
+		return r.scaleUp(g, byN, repo)
+	} else if byN < 0 {
+		return r.scaleDown(g, 0-byN, repo)
+	} else {
+		return nil
+	}
+}
+
 // ScaleUp scales Droplet resources up.
-func (r *DropletResource) ScaleUp(g Group, byN int, repo Repository) error {
+func (r *DropletResource) scaleUp(g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling up")
 
 	var wg sync.WaitGroup
@@ -95,7 +106,7 @@ func (r *DropletResource) ScaleUp(g Group, byN int, repo Repository) error {
 }
 
 // ScaleDown scales Droplet resources down.
-func (r *DropletResource) ScaleDown(g Group, byN int, repo Repository) error {
+func (r *DropletResource) scaleDown(g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling down")
 	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
 	if err != nil {

@@ -90,6 +90,8 @@ type Group struct {
 	MetricType   string     `json:"metric_type" db:"metric_type"`
 	TemplateName string     `json:"template_name" db:"template_name"`
 	ScaleGroup   ScaleGroup `json:"scale_group" db:"rules"`
+
+	policy Policy
 }
 
 // IsValid returns if the template is valid or not.
@@ -99,6 +101,24 @@ func (g *Group) IsValid() bool {
 	}
 
 	return true
+}
+
+// Policy is the scaling policy for the group.
+func (g *Group) Policy() (Policy, error) {
+	if g.policy == nil {
+		p, err := NewValuePolicy(0.75, 2, 0.2, 1)
+		if err != nil {
+			logrus.
+				WithError(err).
+				WithField("group-name", g.Name).
+				Error("unable to create policy")
+			return nil, err
+		}
+
+		g.policy = p
+	}
+
+	return g.policy, nil
 }
 
 // Resource is a resource than can be managed for a group.
@@ -172,12 +192,4 @@ func (t *Template) IsValid() bool {
 // LoadConfig is the configuration settings for a load based metric.
 type LoadConfig struct {
 	Utilization float64 `json:"utilization"`
-}
-
-// ResourceManager is a watched resource interface.
-type ResourceManager interface {
-	Actual() (int, error)
-	ScaleUp(g Group, byN int, repo Repository) error
-	ScaleDown(g Group, byN int, repo Repository) error
-	Allocated() ([]metrics.ResourceAllocation, error)
 }

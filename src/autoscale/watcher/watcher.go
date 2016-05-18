@@ -198,23 +198,20 @@ func (w *Watcher) check(g autoscale.Group) error {
 		return err
 	}
 
-	actual, err := resource.Actual()
+	count, err := resource.Count()
 	if err != nil {
 		return err
 	}
 
 	log.WithFields(logrus.Fields{
 		"wanted": g.BaseSize,
-		"actual": actual,
+		"actual": count,
 	}).Info("group status")
 
-	n := g.BaseSize - actual
+	n := g.BaseSize - count
 
-	if n > 0 {
-		resource.ScaleUp(g, n, w.repo)
-		g.NotifyMetrics()
-	} else if n < 0 {
-		resource.ScaleDown(g, 0-n, w.repo)
+	if n != 0 {
+		resource.Scale(g, n, w.repo)
 		g.NotifyMetrics()
 	}
 
@@ -223,10 +220,31 @@ func (w *Watcher) check(g autoscale.Group) error {
 		return err
 	}
 
+	policy, err := g.Policy()
+	if err != nil {
+		log.
+			WithError(err).
+			Error("unable to retrieve policy")
+		return err
+	}
+
+	count, err = resource.Count()
+	if err != nil {
+		return err
+	}
+
 	log.WithFields(logrus.Fields{
-		"metric":       g.MetricType,
-		"metric-value": value,
+		"metric":         g.MetricType,
+		"metric-value":   value,
+		"resource-count": count,
 	}).Info("current metric value")
+
+	newCount := policy.Scale(count, value)
+
+	if newCount != count && newCount > g.BaseSize {
+		resource.Scale(g, newCount-count, w.repo)
+		g.NotifyMetrics()
+	}
 
 	return nil
 }
