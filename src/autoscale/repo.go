@@ -228,7 +228,7 @@ var (
   SELECT * from groups`
 
 	sqlDeleteGroup = `
-  DELETE from groups WHERE id = $1`
+  DELETE from groups WHERE name = $1`
 
 	sqlUpdateGroup = `
   UPDATE groups set base_size = $1 WHERE id = $2`

@@ -4,79 +4,83 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
+	"pkg/ctxutil"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/prometheus/client_golang/api/prometheus"
+	"github.com/prometheus/common/model"
 )
-
-type prometheusResponse struct {
-	Status string         `json:"status"`
-	Data   prometheusData `json:"data"`
-}
-
-func (pr *prometheusResponse) Value(index int) (float64, error) {
-	if len(pr.Data.Results) < index+1 {
-		return 0, nil
-	}
-
-	return pr.Data.Results[index].Value()
-}
-
-type prometheusData struct {
-	ResultType string             `json:"data"`
-	Results    []prometheusResult `json:"result"`
-}
-
-type prometheusResult struct {
-	RawValue []interface{} `json:"value"`
-}
-
-func (pr *prometheusResult) Value() (float64, error) {
-	return strconv.ParseFloat(pr.RawValue[1].(string), 64)
-}
 
 // PrometheusLoad based on promeetheus metrics.
 type PrometheusLoad struct {
+	log       *logrus.Entry
+	configDir string
 }
 
 // NewPrometheusLoad creates an instance of PrometheusLoad.
-func NewPrometheusLoad() (*PrometheusLoad, error) {
-	return &PrometheusLoad{}, nil
+func NewPrometheusLoad(ctx context.Context) (*PrometheusLoad, error) {
+	log := ctxutil.LogFromContext(ctx)
+	if log == nil {
+		logger := logrus.New()
+		log = logrus.NewEntry(logger)
+	}
+
+	configDir := ctx.Value("prometheusConfigDir").(string)
+	if configDir == "" {
+		var err error
+		if configDir, err = ioutil.TempDir("", "promConfig"); err != nil {
+			return nil, err
+		}
+	}
+
+	log.WithFields(logrus.Fields{
+		"configDir": configDir,
+	}).Info("setting config dir for prometheus")
+
+	return &PrometheusLoad{
+		log:       log,
+		configDir: configDir,
+	}, nil
 }
 
 var _ Metrics = (*PrometheusLoad)(nil)
 
 // Value returns the average load for an entire group.
 func (l *PrometheusLoad) Value(groupName string) (float64, error) {
-	u, err := url.Parse(l.queryURL())
-	if err != nil {
-		return 0, err
-	}
-
-	values := u.Query()
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
-	values.Set("query", q)
-	u.RawQuery = values.Encode()
 
-	res, err := http.Get(u.String())
+	// TODO this should be a different func
+	config := prometheus.Config{
+		Address: "http://localhost:9090",
+	}
+	pClient, err := prometheus.New(config)
 	if err != nil {
 		return 0, err
 	}
-	defer res.Body.Close()
 
-	var pr prometheusResponse
-	if err := json.NewDecoder(res.Body).Decode(&pr); err != nil {
+	qapi := prometheus.NewQueryAPI(pClient)
+	ctx := context.Background()
+	value, err := qapi.Query(ctx, q, time.Now())
+	if err != nil {
 		return 0, err
 	}
 
-	// we only asked for one thing, so it must be the first result
-	return pr.Value(0)
+	switch t := value.(type) {
+	case model.Vector:
+		sample := value.(model.Vector)[0]
+		return float64(sample.Value), nil
+	default:
+		l.log.WithField("query-value-type", t).Warning("unknown prometheus query response")
+		return 0, nil
+	}
 }
 
 // Update updates the prometheus config for a group.
 func (l *PrometheusLoad) Update(groupName string, resourceAllocations []ResourceAllocation) error {
+	l.log.WithField("group", groupName).Info("updating prometheus")
 	tg := targetGroup{
 		Labels: map[string]string{
 			"group": groupName,
@@ -90,15 +94,14 @@ func (l *PrometheusLoad) Update(groupName string, resourceAllocations []Resource
 
 	targetGroups := []targetGroup{tg}
 
-	path := fmt.Sprintf("/Users/bryan/Development/do/projects/prometheus/configs/%s.json",
-		groupName)
+	path := fmt.Sprintf("%s/%s.json", l.configDir, groupName)
 
 	b, err := json.Marshal(&targetGroups)
 	if err != nil {
 		return err
 	}
 
-	logrus.WithField("path", path).Info("writing prometheus target file")
+	l.log.WithField("path", path).Info("writing prometheus target file")
 
 	return ioutil.WriteFile(path, b, 0644)
 }

@@ -79,7 +79,7 @@ func RegisterOfflineMetrics(ctx context.Context) {
 // RegisterDefaultMetrics registers a default set of metrics.
 func RegisterDefaultMetrics(ctx context.Context) {
 	log := ctxutil.LogFromContext(ctx)
-	m, err := NewPrometheusLoad()
+	m, err := NewPrometheusLoad(ctx)
 	if err != nil {
 		log.WithError(err).Error("unable to register prometheus based load metric")
 	}

@@ -2,8 +2,10 @@ package autoscale
 
 import (
 	"autoscale/metrics"
+	"crypto/md5"
 	"database/sql/driver"
 	"fmt"
+	"io"
 	"pkg/doclient"
 	"regexp"
 	"strings"
@@ -18,8 +20,15 @@ var (
 	ResourceManagerFactory ResourceManagerFactoryFn = func(g *Group) (ResourceManager, error) {
 		doClient := doclient.New(DOAccessToken())
 		tag := fmt.Sprintf("do:as:%s", g.Name)
+
+		h := md5.New()
+		io.WriteString(h, tag)
+		hash := fmt.Sprintf("%x", h.Sum(nil))
+
+		newTag := hash[0:8]
+
 		log := logrus.WithField("group-name", g.Name)
-		return NewDropletResource(doClient, tag, log)
+		return NewDropletResource(doClient, newTag, log)
 	}
 )
 
@@ -106,6 +115,7 @@ func (g *Group) NotifyMetrics() error {
 
 	allocated, err := r.Allocated()
 	if err != nil {
+		logrus.WithError(err).Error("unable to retrieve allocated resources")
 		return err
 	}
 

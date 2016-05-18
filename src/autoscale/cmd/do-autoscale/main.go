@@ -27,6 +27,7 @@ type Specification struct {
 	AccessToken            string `envconfig:"access_token" required:"true"`
 	UseFileStats           bool   `envconfig:"use_file_stats" default:"false"`
 	FileStatDir            string `envconfig:"file_stat_dir"`
+	PrometheusConfigDir    string `envconfig:"prometheus_config_dir"`
 	RegisterOfflineMetrics bool   `envconfig:"register_offline_metrics" default:"false"`
 	RegisterDefaultMetrics bool   `envconfig:"register_default_metrics" default:"true"`
 	UseMemoryResources     bool   `envconfig:"use_memory_resources" default:"false"`
@@ -57,6 +58,7 @@ func main() {
 	}
 
 	if s.RegisterDefaultMetrics {
+		ctx = context.WithValue(ctx, "prometheusConfigDir", s.PrometheusConfigDir)
 		metrics.RegisterDefaultMetrics(ctx)
 	}
 
