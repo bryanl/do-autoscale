@@ -1,7 +1,6 @@
 package autoscale
 
 import (
-	"autoscale/metrics"
 	"fmt"
 	"pkg/cloudinit"
 	"pkg/doclient"
@@ -134,20 +133,20 @@ func (r *DropletResource) scaleDown(g Group, byN int, repo Repository) error {
 }
 
 // Allocated returns the allocated droplets.
-func (r *DropletResource) Allocated() ([]metrics.ResourceAllocation, error) {
+func (r *DropletResource) Allocated() ([]ResourceAllocation, error) {
 	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
 	if err != nil {
 		return nil, err
 	}
 
-	allocations := []metrics.ResourceAllocation{}
+	allocations := []ResourceAllocation{}
 	for _, droplet := range droplets {
 		ip, err := droplet.PublicIPv4()
 		if err != nil {
 			return nil, err
 		}
 
-		allocation := metrics.ResourceAllocation{
+		allocation := ResourceAllocation{
 			Name:    droplet.Name,
 			Address: ip,
 		}

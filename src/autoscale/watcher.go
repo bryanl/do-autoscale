@@ -1,7 +1,6 @@
-package watcher
+package autoscale
 
 import (
-	"autoscale"
 	"fmt"
 	"sync"
 	"time"
@@ -19,7 +18,7 @@ type watchedJob struct {
 
 // Watcher watches groups.
 type Watcher struct {
-	repo       autoscale.Repository
+	repo       Repository
 	log        *logrus.Entry
 	groupNames []string
 	workChan   chan watchedJob
@@ -32,8 +31,8 @@ func makeJobQueue() chan watchedJob {
 	return make(chan watchedJob, 1000)
 }
 
-// New creates an instance of Watcher.
-func New(repo autoscale.Repository) *Watcher {
+// NewWatcher creates an instance of Watcher.
+func NewWatcher(repo Repository) *Watcher {
 	return &Watcher{
 		repo:     repo,
 		log:      logrus.WithField("action", "watcher"),
@@ -169,7 +168,7 @@ func (w *Watcher) Stop() {
 }
 
 // check group to make sure it is at capacity.
-func (w *Watcher) queueCheck(g autoscale.Group) {
+func (w *Watcher) queueCheck(g Group) {
 	checkDelay := 10 * time.Second
 
 	if err := w.check(g); err != nil {
@@ -190,7 +189,7 @@ func (w *Watcher) queueCheck(g autoscale.Group) {
 	w.queueJob(g.Name)
 }
 
-func (w *Watcher) check(g autoscale.Group) error {
+func (w *Watcher) check(g Group) error {
 	log := w.log.WithField("group-name", g.Name)
 
 	resource, err := g.Resource()

@@ -1,14 +1,13 @@
-package watcher
+package autoscale
 
 import (
-	"autoscale/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWatcher(t *testing.T) {
-	repo := &mocks.Repository{}
+	repo := &MockRepository{}
 
 	watcher := New(repo)
 

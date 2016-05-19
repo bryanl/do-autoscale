@@ -1,4 +1,4 @@
-package metrics
+package autoscale
 
 import (
 	"encoding/json"

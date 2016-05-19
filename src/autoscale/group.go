@@ -1,7 +1,6 @@
 package autoscale
 
 import (
-	"autoscale/metrics"
 	"crypto/md5"
 	"database/sql/driver"
 	"fmt"
@@ -144,7 +143,7 @@ func (g *Group) NotifyMetrics() error {
 		"metric-type": g.MetricType,
 	}).Info("fetching metric for group")
 
-	m, err := metrics.Retrieve(g.MetricType)
+	m, err := Retrieve(g.MetricType)
 	if err != nil {
 		logrus.WithError(err).WithField("metric-type", g.MetricType).Error("unable to retrieve metric")
 		return err
@@ -160,7 +159,7 @@ func (g *Group) MetricsValue() (float64, error) {
 		"metric-type": g.MetricType,
 	}).Info("fetching metric value for group")
 
-	m, err := metrics.Retrieve(g.MetricType)
+	m, err := Retrieve(g.MetricType)
 	if err != nil {
 		logrus.WithError(err).WithField("metric-type", g.MetricType).Error("unable to retrieve metric")
 		return 0, err

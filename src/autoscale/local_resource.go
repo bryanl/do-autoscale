@@ -1,7 +1,6 @@
 package autoscale
 
 import (
-	"autoscale/metrics"
 	"fmt"
 	"math/rand"
 	"pkg/ctxutil"
@@ -69,10 +68,10 @@ func (r *LocalResource) scaleDown(g Group, byN int, repo Repository) error {
 }
 
 // Allocated returns a slice of ResourceAllocation for this resource.
-func (r *LocalResource) Allocated() ([]metrics.ResourceAllocation, error) {
-	allocations := []metrics.ResourceAllocation{}
+func (r *LocalResource) Allocated() ([]ResourceAllocation, error) {
+	allocations := []ResourceAllocation{}
 	for i := 0; i < r.count; i++ {
-		allocation := metrics.ResourceAllocation{
+		allocation := ResourceAllocation{
 			Name: fmt.Sprintf("instance-%d", i+1),
 		}
 		allocations = append(allocations, allocation)

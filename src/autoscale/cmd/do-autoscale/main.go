@@ -3,8 +3,6 @@ package main
 import (
 	"autoscale"
 	"autoscale/api"
-	"autoscale/metrics"
-	"autoscale/watcher"
 
 	"golang.org/x/net/context"
 
@@ -59,11 +57,11 @@ func main() {
 
 	if s.RegisterDefaultMetrics {
 		ctx = context.WithValue(ctx, "prometheusConfigDir", s.PrometheusConfigDir)
-		metrics.RegisterDefaultMetrics(ctx)
+		autoscale.RegisterDefaultMetrics(ctx)
 	}
 
 	if s.RegisterOfflineMetrics {
-		metrics.RegisterOfflineMetrics(ctx)
+		autoscale.RegisterOfflineMetrics(ctx)
 	}
 
 	autoscale.DOAccessToken = func() string {
@@ -80,7 +78,7 @@ func main() {
 		log.WithError(err).Fatal("unable to setup data repository")
 	}
 
-	watcher := watcher.New(repo)
+	watcher := autoscale.NewWatcher(repo)
 	go func() {
 		if _, err := watcher.Watch(); err != nil {
 			log.WithError(err).Fatal("unable to start watcher")
