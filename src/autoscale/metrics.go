@@ -46,7 +46,7 @@ func Retrieve(metricType string) (Metrics, error) {
 
 // Metrics pull metrics for a autoscaler.
 type Metrics interface {
-	Value(groupName string) (float64, error)
+	Measure(groupName string) (float64, error)
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
 }
 

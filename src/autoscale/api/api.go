@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"pkg/ctxutil"
+
+	"golang.org/x/net/context"
 
 	"autoscale"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 )
 
@@ -27,15 +29,17 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 type API struct {
 	Mux  *mux.Router
 	repo autoscale.Repository
+	ctx  context.Context
 }
 
 // New creates an instance of API.
-func New(repo autoscale.Repository) *API {
+func New(ctx context.Context, repo autoscale.Repository) *API {
 	r := mux.NewRouter()
 
 	a := &API{
 		Mux:  r,
 		repo: repo,
+		ctx:  ctx,
 	}
 
 	r.HandleFunc("/templates", a.listTemplates).Methods("GET")
@@ -52,7 +56,8 @@ func New(repo autoscale.Repository) *API {
 }
 
 func (a *API) listTemplates(w http.ResponseWriter, r *http.Request) {
-	tmpls, err := a.repo.ListTemplates()
+	log := ctxutil.LogFromContext(a.ctx)
+	tmpls, err := a.repo.ListTemplates(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list templates")
 		writeError(w, "unable to list templates", http.StatusInternalServerError)
@@ -63,10 +68,12 @@ func (a *API) listTemplates(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) getTemplate(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	tmpl, err := a.repo.GetTemplate(id)
+	tmpl, err := a.repo.GetTemplate(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("retrieve template")
 		writeError(w, "unable to retrieve template", http.StatusNotFound)
@@ -77,6 +84,8 @@ func (a *API) getTemplate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	defer r.Body.Close()
 
 	var ctr autoscale.CreateTemplateRequest
@@ -87,7 +96,7 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := a.repo.CreateTemplate(ctr)
+	tmpl, err := a.repo.CreateTemplate(a.ctx, ctr)
 	if err != nil {
 		writeError(w, "unable to create template", http.StatusBadRequest)
 		return
@@ -98,10 +107,12 @@ func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) deleteTemplate(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	err := a.repo.DeleteTemplate(id)
+	err := a.repo.DeleteTemplate(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("delete template")
 		writeError(w, "unable to delete template", http.StatusBadRequest)
@@ -112,7 +123,9 @@ func (a *API) deleteTemplate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) listGroups(w http.ResponseWriter, r *http.Request) {
-	groups, err := a.repo.ListGroups()
+	log := ctxutil.LogFromContext(a.ctx)
+
+	groups, err := a.repo.ListGroups(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list groups")
 		writeError(w, "unable to list groups", http.StatusInternalServerError)
@@ -123,10 +136,12 @@ func (a *API) listGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) getGroup(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	group, err := a.repo.GetGroup(id)
+	group, err := a.repo.GetGroup(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("get group")
 		writeError(w, "unable to retrieve group", http.StatusNotFound)
@@ -137,16 +152,19 @@ func (a *API) getGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	defer r.Body.Close()
 
 	var cgr autoscale.CreateGroupRequest
 	err := json.NewDecoder(r.Body).Decode(&cgr)
 	if err != nil {
+		log.WithError(err).Error("invalid create group JSON")
 		writeError(w, "invalid create group request", http.StatusBadRequest)
 		return
 	}
 
-	g, err := a.repo.CreateGroup(cgr)
+	g, err := a.repo.CreateGroup(a.ctx, cgr)
 	if err != nil {
 		log.WithError(err).Error("create group")
 		writeError(w, "unable to create group", http.StatusBadRequest)
@@ -158,10 +176,12 @@ func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	err := a.repo.DeleteGroup(id)
+	err := a.repo.DeleteGroup(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("delete group")
 		writeError(w, "unable to delete group", http.StatusBadRequest)
@@ -172,6 +192,8 @@ func (a *API) deleteGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) updateGroup(w http.ResponseWriter, r *http.Request) {
+	log := ctxutil.LogFromContext(a.ctx)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -180,18 +202,20 @@ func (a *API) updateGroup(w http.ResponseWriter, r *http.Request) {
 	var ugr autoscale.UpdateGroupRequest
 	err := json.NewDecoder(r.Body).Decode(&ugr)
 	if err != nil {
+		log.WithError(err).Error("can't update group'")
 		writeError(w, "invalid update group request", http.StatusBadRequest)
 		return
 	}
 
-	g, err := a.repo.GetGroup(id)
+	g, err := a.repo.GetGroup(a.ctx, id)
 	if err != nil {
+		log.WithError(err).Error("can't retrieve group")
 		writeError(w, "invalid update group request", http.StatusNotFound)
 		return
 	}
 
-	g.BaseSize = ugr.BaseSize
-	err = a.repo.SaveGroup(g)
+	err = a.repo.SaveGroup(a.ctx, g)
+
 	if err != nil {
 		log.WithError(err).Error("update group")
 		writeError(w, "unable to update group", http.StatusBadRequest)

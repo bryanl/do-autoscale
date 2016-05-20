@@ -1,6 +1,8 @@
 package autoscale
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,7 +14,22 @@ import (
 // FileLoad returns hardcoded metrics from files. This is useful if you
 // are on a plane and want to test the autoscaler.
 type FileLoad struct {
-	statsDir string
+	StatsDir string `json:"stats_dir"`
+}
+
+// Value converts a FileLoad to JSON to be stored in the databases.
+func (l *FileLoad) Value() (driver.Value, error) {
+	return json.Marshal(l)
+}
+
+// Scan converts a DB value back into a FileLoad.
+func (l *FileLoad) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+
+	b := []byte(src.([]uint8))
+	return json.Unmarshal(b, l)
 }
 
 var _ Metrics = (*FileLoad)(nil)
@@ -29,13 +46,13 @@ func NewFileLoad(statsDir string) (*FileLoad, error) {
 	}
 
 	return &FileLoad{
-		statsDir: statsDir,
+		StatsDir: statsDir,
 	}, nil
 }
 
-// Value returns the current value fro a group.
-func (l *FileLoad) Value(groupName string) (float64, error) {
-	p := filepath.Join(l.statsDir, groupName)
+// Measure returns the current value fro a group.
+func (l *FileLoad) Measure(groupName string) (float64, error) {
+	p := filepath.Join(l.StatsDir, groupName)
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
 		return 0, err

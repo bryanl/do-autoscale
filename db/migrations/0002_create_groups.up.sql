@@ -4,9 +4,11 @@ CREATE TABLE groups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name text not null,
   base_name text,
-  base_size int,
+  template_name text references templates(name),
   metric_type text,
-  template_name text references templates(name)
+  metric jsonb,
+  policy_type text,
+  policy jsonb
 );
 
 CREATE UNIQUE INDEX groups_name_idx on groups(name);

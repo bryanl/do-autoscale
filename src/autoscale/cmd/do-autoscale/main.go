@@ -80,12 +80,12 @@ func main() {
 
 	watcher := autoscale.NewWatcher(repo)
 	go func() {
-		if _, err := watcher.Watch(); err != nil {
+		if _, err := watcher.Watch(ctx); err != nil {
 			log.WithError(err).Fatal("unable to start watcher")
 		}
 	}()
 
-	a := api.New(repo)
+	a := api.New(ctx, repo)
 	http.Handle("/", a.Mux)
 
 	log.WithFields(logrus.Fields{

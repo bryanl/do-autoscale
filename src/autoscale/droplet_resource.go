@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"sync"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/digitalocean/godo"
 )
@@ -62,24 +64,24 @@ func (r *DropletResource) Count() (int, error) {
 }
 
 // Scale sclaes DropletResources byN.
-func (r *DropletResource) Scale(g Group, byN int, repo Repository) error {
+func (r *DropletResource) Scale(ctx context.Context, g Group, byN int, repo Repository) error {
 	if byN > 0 {
-		return r.scaleUp(g, byN, repo)
+		return r.scaleUp(ctx, g, byN, repo)
 	} else if byN < 0 {
-		return r.scaleDown(g, 0-byN, repo)
+		return r.scaleDown(ctx, g, 0-byN, repo)
 	} else {
 		return nil
 	}
 }
 
 // ScaleUp scales Droplet resources up.
-func (r *DropletResource) scaleUp(g Group, byN int, repo Repository) error {
+func (r *DropletResource) scaleUp(ctx context.Context, g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling up")
 
 	var wg sync.WaitGroup
 	wg.Add(byN)
 
-	tmpl, err := repo.GetTemplate(g.TemplateName)
+	tmpl, err := repo.GetTemplate(ctx, g.TemplateName)
 	if err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func (r *DropletResource) scaleUp(g Group, byN int, repo Repository) error {
 }
 
 // ScaleDown scales Droplet resources down.
-func (r *DropletResource) scaleDown(g Group, byN int, repo Repository) error {
+func (r *DropletResource) scaleDown(ctx context.Context, g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling down")
 	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
 	if err != nil {

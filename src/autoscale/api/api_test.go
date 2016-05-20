@@ -2,7 +2,6 @@ package api
 
 import (
 	"autoscale"
-	"autoscale/mocks"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -10,6 +9,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,10 +21,11 @@ func TestListTemplates(t *testing.T) {
 		{ID: "2"},
 	}
 
-	repo := &mocks.Repository{}
-	repo.On("ListTemplates").Return(ogTmpls, nil)
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	repo.On("ListTemplates", ctx).Return(ogTmpls, nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -48,10 +50,12 @@ func TestListTemplates(t *testing.T) {
 }
 
 func TestDeleteTemplate(t *testing.T) {
-	repo := &mocks.Repository{}
-	repo.On("DeleteTemplate", "1").Return(nil)
+	ctx := context.Background()
 
-	api := New(repo)
+	repo := &autoscale.MockRepository{}
+	repo.On("DeleteTemplate", ctx, "1").Return(nil)
+
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -74,10 +78,12 @@ func TestDeleteTemplate(t *testing.T) {
 func TestGetTemplate(t *testing.T) {
 	ogTmpl := autoscale.Template{ID: "1"}
 
-	repo := &mocks.Repository{}
-	repo.On("GetTemplate", "1").Return(ogTmpl, nil)
+	ctx := context.Background()
 
-	api := New(repo)
+	repo := &autoscale.MockRepository{}
+	repo.On("GetTemplate", ctx, "1").Return(ogTmpl, nil)
+
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -102,10 +108,11 @@ func TestGetTemplate(t *testing.T) {
 }
 
 func TestGetMissingTemplate(t *testing.T) {
-	repo := &mocks.Repository{}
-	repo.On("GetTemplate", "1").Return(autoscale.Template{}, errors.New("boom"))
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	repo.On("GetTemplate", ctx, "1").Return(autoscale.Template{}, errors.New("boom"))
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -124,7 +131,8 @@ func TestGetMissingTemplate(t *testing.T) {
 }
 
 func TestCreateTemplate(t *testing.T) {
-	repo := &mocks.Repository{}
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
 	ctr := autoscale.CreateTemplateRequest{
 		Name:     "a-template",
 		Region:   "dev0",
@@ -144,9 +152,9 @@ func TestCreateTemplate(t *testing.T) {
 		UserData: "#userdata",
 	}
 
-	repo.On("CreateTemplate", ctr).Return(tmpl, nil)
+	repo.On("CreateTemplate", ctx, ctr).Return(tmpl, nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -189,10 +197,11 @@ func TestListGroups(t *testing.T) {
 		{ID: "6789"},
 	}
 
-	repo := &mocks.Repository{}
-	repo.On("ListGroups").Return(ogGroups, nil)
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	repo.On("ListGroups", ctx).Return(ogGroups, nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -217,10 +226,11 @@ func TestListGroups(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	repo := &mocks.Repository{}
-	repo.On("DeleteGroup", "abc").Return(nil)
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	repo.On("DeleteGroup", ctx, "abc").Return(nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -242,13 +252,14 @@ func TestDeleteGroup(t *testing.T) {
 
 func TestUpdateGroup(t *testing.T) {
 	ogGroup := autoscale.Group{ID: "abc"}
-	ogGroupUpdated := autoscale.Group{ID: "abc", BaseSize: 6}
+	ogGroupUpdated := autoscale.Group{ID: "abc"}
 
-	repo := &mocks.Repository{}
-	repo.On("GetGroup", "abc").Return(ogGroup, nil)
-	repo.On("SaveGroup", ogGroupUpdated).Return(nil)
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
+	repo.On("SaveGroup", ctx, ogGroupUpdated).Return(nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -277,12 +288,13 @@ func TestUpdateGroup(t *testing.T) {
 }
 
 func TestGetGroup(t *testing.T) {
+	ctx := context.Background()
 	ogGroup := autoscale.Group{ID: "abc"}
 
-	repo := &mocks.Repository{}
-	repo.On("GetGroup", "abc").Return(ogGroup, nil)
+	repo := &autoscale.MockRepository{}
+	repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -307,10 +319,12 @@ func TestGetGroup(t *testing.T) {
 }
 
 func TestGetMissingGroup(t *testing.T) {
-	repo := &mocks.Repository{}
-	repo.On("GetGroup", "1").Return(autoscale.Group{}, errors.New("boom"))
+	ctx := context.Background()
 
-	api := New(repo)
+	repo := &autoscale.MockRepository{}
+	repo.On("GetGroup", ctx, "1").Return(autoscale.Group{}, errors.New("boom"))
+
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -329,12 +343,14 @@ func TestGetMissingGroup(t *testing.T) {
 }
 
 func TestCreateGroup(t *testing.T) {
-	repo := &mocks.Repository{}
+	ctx := context.Background()
+
+	repo := &autoscale.MockRepository{}
 	cgr := autoscale.CreateGroupRequest{
 		Name:         "group",
 		BaseName:     "as",
-		BaseSize:     3,
 		MetricType:   "load",
+		PolicyType:   "value",
 		TemplateName: "a-template",
 	}
 
@@ -342,14 +358,14 @@ func TestCreateGroup(t *testing.T) {
 		ID:           "1",
 		Name:         "group",
 		BaseName:     "as",
-		BaseSize:     3,
 		MetricType:   "load",
+		PolicyType:   "value",
 		TemplateName: "a-template",
 	}
 
-	repo.On("CreateGroup", cgr).Return(group, nil)
+	repo.On("CreateGroup", ctx, cgr).Return(group, nil)
 
-	api := New(repo)
+	api := New(ctx, repo)
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -361,8 +377,8 @@ func TestCreateGroup(t *testing.T) {
 	req := []byte(`{
     "name": "group",
     "base_name": "as",
-    "base_size": 3,
     "metric_type": "load",
+    "policy_type": "value",
     "template_name": "a-template"
   }`)
 

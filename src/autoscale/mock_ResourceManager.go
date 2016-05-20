@@ -2,6 +2,8 @@ package autoscale
 
 import "github.com/stretchr/testify/mock"
 
+import "golang.org/x/net/context"
+
 type MockResourceManager struct {
 	mock.Mock
 }
@@ -25,12 +27,12 @@ func (_m *MockResourceManager) Count() (int, error) {
 
 	return r0, r1
 }
-func (_m *MockResourceManager) Scale(g Group, byN int, repo Repository) error {
-	ret := _m.Called(g, byN, repo)
+func (_m *MockResourceManager) Scale(ctx context.Context, g Group, byN int, repo Repository) error {
+	ret := _m.Called(ctx, g, byN, repo)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(Group, int, Repository) error); ok {
-		r0 = rf(g, byN, repo)
+	if rf, ok := ret.Get(0).(func(context.Context, Group, int, Repository) error); ok {
+		r0 = rf(ctx, g, byN, repo)
 	} else {
 		r0 = ret.Error(0)
 	}

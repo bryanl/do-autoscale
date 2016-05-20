@@ -6,7 +6,7 @@ type MockMetrics struct {
 	mock.Mock
 }
 
-func (_m *MockMetrics) Value(groupName string) (float64, error) {
+func (_m *MockMetrics) Measure(groupName string) (float64, error) {
 	ret := _m.Called(groupName)
 
 	var r0 float64

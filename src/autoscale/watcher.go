@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 )
 
@@ -88,7 +90,7 @@ func (w *Watcher) Groups() []string {
 }
 
 // Watch starts the watching process.
-func (w *Watcher) Watch() (chan bool, error) {
+func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 	w.wg.Lock()
 	defer w.wg.Unlock()
 
@@ -121,7 +123,7 @@ func (w *Watcher) Watch() (chan bool, error) {
 				log := log.WithField("group-name", job.name)
 				log.Info("watching group")
 
-				g, err := w.repo.GetGroup(job.name)
+				g, err := w.repo.GetGroup(ctx, job.name)
 				if err != nil {
 					log.WithError(err).Error("retrieve group")
 				}
@@ -129,7 +131,7 @@ func (w *Watcher) Watch() (chan bool, error) {
 				go w.queueCheck(g)
 
 			case <-groupWatchTicker.C:
-				groups, err := w.repo.ListGroups()
+				groups, err := w.repo.ListGroups(ctx)
 				if err != nil {
 					log.WithError(err).Error("unable to load groups to watch")
 				}
@@ -197,37 +199,13 @@ func (w *Watcher) check(g Group) error {
 		return err
 	}
 
-	count, err := resource.Count()
-	if err != nil {
-		return err
-	}
-
-	log.WithFields(logrus.Fields{
-		"wanted": g.BaseSize,
-		"actual": count,
-	}).Info("group status")
-
-	n := g.BaseSize - count
-
-	if n != 0 {
-		resource.Scale(g, n, w.repo)
-		g.NotifyMetrics()
-	}
-
 	value, err := g.MetricsValue()
 	if err != nil {
 		return err
 	}
 
-	policy, err := g.Policy()
-	if err != nil {
-		log.
-			WithError(err).
-			Error("unable to retrieve policy")
-		return err
-	}
-
-	count, err = resource.Count()
+	policy := g.Policy
+	count, err := resource.Count()
 	if err != nil {
 		return err
 	}
@@ -238,12 +216,7 @@ func (w *Watcher) check(g Group) error {
 		"resource-count": count,
 	}).Info("current metric value")
 
-	newCount := policy.Scale(count, value)
-
-	if newCount != count && newCount > g.BaseSize {
-		resource.Scale(g, newCount-count, w.repo)
-		g.NotifyMetrics()
-	}
+	policy.Scale(&g, count, value)
 
 	return nil
 }

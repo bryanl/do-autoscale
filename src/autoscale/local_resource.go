@@ -41,18 +41,18 @@ func (r *LocalResource) Count() (int, error) {
 }
 
 // Scale scales in memory resources byN.
-func (r *LocalResource) Scale(g Group, byN int, repo Repository) error {
+func (r *LocalResource) Scale(ctx context.Context, g Group, byN int, repo Repository) error {
 	if byN > 0 {
-		return r.scaleUp(g, byN, repo)
+		return r.scaleUp(ctx, g, byN, repo)
 	} else if byN < 0 {
-		return r.scaleDown(g, 0-byN, repo)
+		return r.scaleDown(ctx, g, 0-byN, repo)
 	} else {
 		return nil
 	}
 }
 
 // ScaleUp scales resources up.
-func (r *LocalResource) scaleUp(g Group, byN int, repo Repository) error {
+func (r *LocalResource) scaleUp(ctx context.Context, g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling up")
 
 	r.count = r.count + byN
@@ -60,7 +60,7 @@ func (r *LocalResource) scaleUp(g Group, byN int, repo Repository) error {
 }
 
 // ScaleDown scales resources down.
-func (r *LocalResource) scaleDown(g Group, byN int, repo Repository) error {
+func (r *LocalResource) scaleDown(ctx context.Context, g Group, byN int, repo Repository) error {
 	r.log.WithField("by-n", byN).Info("scaling down")
 
 	r.count = r.count - byN

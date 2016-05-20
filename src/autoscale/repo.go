@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/jmoiron/sqlx"
+
+	"golang.org/x/net/context"
 )
 
 var (
@@ -14,16 +16,16 @@ var (
 
 // Repository maps data to an entity models.
 type Repository interface {
-	CreateTemplate(tcr CreateTemplateRequest) (Template, error)
-	GetTemplate(name string) (Template, error)
-	ListTemplates() ([]Template, error)
-	DeleteTemplate(name string) error
+	CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error)
+	GetTemplate(ctx context.Context, name string) (Template, error)
+	ListTemplates(ctx context.Context) ([]Template, error)
+	DeleteTemplate(ctx context.Context, name string) error
 
-	CreateGroup(gcr CreateGroupRequest) (Group, error)
-	GetGroup(name string) (Group, error)
-	ListGroups() ([]Group, error)
-	DeleteGroup(name string) error
-	SaveGroup(group Group) error
+	CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error)
+	GetGroup(ctx context.Context, name string) (Group, error)
+	ListGroups(ctx context.Context) ([]Group, error)
+	DeleteGroup(ctx context.Context, name string) error
+	SaveGroup(ctx context.Context, group Group) error
 }
 
 type pgRepo struct {
@@ -40,7 +42,7 @@ func NewRepository(db *sql.DB) (Repository, error) {
 	}, nil
 }
 
-func (r *pgRepo) CreateTemplate(tcr CreateTemplateRequest) (Template, error) {
+func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error) {
 	t := Template{
 		Name:     tcr.Name,
 		Region:   tcr.Region,
@@ -77,7 +79,7 @@ func (r *pgRepo) CreateTemplate(tcr CreateTemplateRequest) (Template, error) {
 	return t, nil
 }
 
-func (r *pgRepo) GetTemplate(name string) (Template, error) {
+func (r *pgRepo) GetTemplate(ctx context.Context, name string) (Template, error) {
 	var t Template
 	if err := r.db.Get(&t, sqlGetTemplate, name); err != nil {
 		return Template{}, err
@@ -86,7 +88,7 @@ func (r *pgRepo) GetTemplate(name string) (Template, error) {
 	return t, nil
 }
 
-func (r *pgRepo) ListTemplates() ([]Template, error) {
+func (r *pgRepo) ListTemplates(ctx context.Context) ([]Template, error) {
 	ts := []Template{}
 	if err := r.db.Select(&ts, sqlListTemplates); err != nil {
 		return nil, err
@@ -95,7 +97,7 @@ func (r *pgRepo) ListTemplates() ([]Template, error) {
 	return ts, nil
 }
 
-func (r *pgRepo) DeleteTemplate(name string) error {
+func (r *pgRepo) DeleteTemplate(ctx context.Context, name string) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
@@ -110,13 +112,10 @@ func (r *pgRepo) DeleteTemplate(name string) error {
 	return tx.Commit()
 }
 
-func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
-	g := Group{
-		Name:         gcr.Name,
-		BaseName:     gcr.BaseName,
-		BaseSize:     gcr.BaseSize,
-		MetricType:   gcr.MetricType,
-		TemplateName: gcr.TemplateName,
+func (r *pgRepo) CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error) {
+	g, err := gcr.ConvertToGroup(ctx)
+	if err != nil {
+		return Group{}, err
 	}
 
 	if !g.IsValid() {
@@ -131,7 +130,7 @@ func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 	}
 
 	err = sqlx.Get(tx, &id, sqlCreateGroup,
-		g.Name, g.BaseName, g.BaseSize, g.MetricType, g.TemplateName, g.ScaleGroup)
+		g.Name, g.BaseName, g.TemplateName, g.MetricType, g.Metric, g.PolicyType, g.Policy)
 	if err != nil {
 		tx.Rollback()
 		return Group{}, err
@@ -144,10 +143,10 @@ func (r *pgRepo) CreateGroup(gcr CreateGroupRequest) (Group, error) {
 
 	g.ID = id
 
-	return g, nil
+	return *g, nil
 }
 
-func (r *pgRepo) SaveGroup(g Group) error {
+func (r *pgRepo) SaveGroup(ctx context.Context, g Group) error {
 	if !g.IsValid() {
 		return errors.New(ValidationErr)
 	}
@@ -157,7 +156,7 @@ func (r *pgRepo) SaveGroup(g Group) error {
 		return err
 	}
 
-	_, err = tx.Exec(sqlUpdateGroup, g.BaseSize, g.ID)
+	_, err = tx.Exec(sqlUpdateGroup, g.Metric, g.Policy, g.Name)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -166,25 +165,78 @@ func (r *pgRepo) SaveGroup(g Group) error {
 	return tx.Commit()
 }
 
-func (r *pgRepo) GetGroup(name string) (Group, error) {
-	var g Group
-	if err := r.db.Get(&g, sqlGetGroup, name); err != nil {
+func (r *pgRepo) GetGroup(ctx context.Context, name string) (Group, error) {
+	row := r.db.QueryRowx(sqlGetGroup, name)
+
+	var id, baseName, templateName, metricType, policyType string
+	var metric, policy interface{}
+
+	if err := row.Scan(&id, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
+		return Group{}, err
+	}
+
+	g := Group{
+		ID:           id,
+		Name:         name,
+		BaseName:     baseName,
+		TemplateName: templateName,
+		MetricType:   metricType,
+		PolicyType:   policyType,
+	}
+
+	if err := g.LoadPolicy(policy); err != nil {
+		return Group{}, err
+	}
+
+	if err := g.LoadMetric(metric); err != nil {
 		return Group{}, err
 	}
 
 	return g, nil
 }
 
-func (r *pgRepo) ListGroups() ([]Group, error) {
-	ts := []Group{}
-	if err := r.db.Select(&ts, sqlListGroups); err != nil {
+func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
+	groups := []Group{}
+
+	rows, err := r.db.Queryx(sqlListGroups)
+	if err != nil {
 		return nil, err
 	}
 
-	return ts, nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, name, baseName, templateName, metricType, policyType string
+		var metric, policy interface{}
+
+		if err := rows.Scan(&id, &name, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
+			return nil, err
+		}
+
+		g := Group{
+			ID:           id,
+			Name:         name,
+			BaseName:     baseName,
+			TemplateName: templateName,
+			MetricType:   metricType,
+			PolicyType:   policyType,
+		}
+
+		if err := g.LoadPolicy(policy); err != nil {
+			return nil, err
+		}
+
+		if err := g.LoadMetric(metric); err != nil {
+			return nil, err
+		}
+
+		groups = append(groups, g)
+	}
+
+	return groups, nil
 }
 
-func (r *pgRepo) DeleteGroup(name string) error {
+func (r *pgRepo) DeleteGroup(ctx context.Context, name string) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
@@ -217,19 +269,20 @@ var (
 
 	sqlCreateGroup = `
   INSERT into groups
-  (name, base_name, base_size, metric_type, template_name, rules)
-  VALUES ($1, $2, $3, $4, $5, $6)
+  (name, base_name, template_name, metric_type, metric, policy_type, policy)
+  VALUES ($1, $2, $3, $4, $5, $6, $7)
   RETURNING id`
 
 	sqlGetGroup = `
-  SELECT * from groups where name=$1`
+  SELECT id, base_name, template_name, metric_type, metric, policy_type, policy from groups where name=$1`
 
 	sqlListGroups = `
-  SELECT * from groups`
+  SELECT id, name, base_name, template_name, metric_type, metric, policy_type, policy from groups`
 
 	sqlDeleteGroup = `
   DELETE from groups WHERE name = $1`
 
+	// TODO figure out what we update
 	sqlUpdateGroup = `
-  UPDATE groups set base_size = $1 WHERE id = $2`
+  UPDATE groups set metrics = $1, policy = $2 WHERE name = $3`
 )

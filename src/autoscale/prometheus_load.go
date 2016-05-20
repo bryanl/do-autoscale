@@ -48,8 +48,8 @@ func NewPrometheusLoad(ctx context.Context) (*PrometheusLoad, error) {
 
 var _ Metrics = (*PrometheusLoad)(nil)
 
-// Value returns the average load for an entire group.
-func (l *PrometheusLoad) Value(groupName string) (float64, error) {
+// Measure returns the average load for an entire group.
+func (l *PrometheusLoad) Measure(groupName string) (float64, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
 	// TODO this should be a different func
