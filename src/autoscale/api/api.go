@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"pkg/ctxutil"
+	"pkg/echologger"
 
 	"golang.org/x/net/context"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
+	"github.com/labstack/echo/middleware"
+	"github.com/satori/go.uuid"
 )
 
 type errorMsg struct {
@@ -46,6 +49,30 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		repo: repo,
 		ctx:  ctx,
 	}
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			reqID := c.Request().Header().Get("X-Request-Id")
+			if reqID == "" {
+				reqID = uuid.NewV4().String()
+				c.Request().Header().Set("X-Request-Id", reqID)
+
+			}
+
+			newCtx := context.WithValue(c, "RequestID", reqID)
+			c.SetNetContext(newCtx)
+
+			return next(c)
+		}
+	})
+
+	log := ctxutil.LogFromContext(ctx)
+	logmw := echologger.NewWithNameAndLogger("autoscale", log)
+	e.Use(logmw)
+
+	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		StackSize: 1 << 10, // 1 KB
+	}))
 
 	e.GET("/templates/:id", a.getTemplate)
 	e.GET("/templates", a.listTemplates)
