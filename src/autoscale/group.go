@@ -84,9 +84,9 @@ type CreateGroupRequest struct {
 	BaseName     string          `json:"base_name"`
 	TemplateName string          `json:"template_name"`
 	MetricType   string          `json:"metric_type"`
-	Metric       json.RawMessage `json:"metric"`
+	Metric       json.RawMessage `json:"metric,omitempty"`
 	PolicyType   string          `json:"policy_type"`
-	Policy       json.RawMessage `json:"policy"`
+	Policy       json.RawMessage `json:"policy,omitempty"`
 }
 
 // ConvertToGroup convertes a CreateGroupRequest to a Group

@@ -9,7 +9,9 @@ import (
 
 	"autoscale"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/engine"
+	"github.com/labstack/echo/engine/standard"
 )
 
 type errorMsg struct {
@@ -27,201 +29,174 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 
 // API is the autoscale API.
 type API struct {
-	Mux  *mux.Router
+	Mux  http.Handler
 	repo autoscale.Repository
 	ctx  context.Context
 }
 
 // New creates an instance of API.
 func New(ctx context.Context, repo autoscale.Repository) *API {
-	r := mux.NewRouter()
+	e := echo.New()
+
+	std := standard.WithConfig(engine.Config{})
+	std.SetHandler(e)
 
 	a := &API{
-		Mux:  r,
+		Mux:  std,
 		repo: repo,
 		ctx:  ctx,
 	}
 
-	r.HandleFunc("/templates", a.listTemplates).Methods("GET")
-	r.HandleFunc("/templates/{id}", a.getTemplate).Methods("GET")
-	r.HandleFunc("/templates", a.createTemplate).Methods("POST")
-	r.HandleFunc("/templates/{id}", a.deleteTemplate).Methods("DELETE")
-	r.HandleFunc("/groups", a.listGroups).Methods("GET")
-	r.HandleFunc("/groups/{id}", a.getGroup).Methods("GET")
-	r.HandleFunc("/groups", a.createGroup).Methods("POST")
-	r.HandleFunc("/groups/{id}", a.deleteGroup).Methods("DELETE")
-	r.HandleFunc("/groups/{id}", a.updateGroup).Methods("PUT")
+	e.GET("/templates/:id", a.getTemplate)
+	e.GET("/templates", a.listTemplates)
+	e.POST("/templates", a.createTemplate)
+	e.DELETE("/templates/:id", a.deleteTemplate)
+	e.GET("/groups", a.listGroups)
+	e.GET("/groups/:id", a.getGroup)
+	e.POST("/groups", a.createGroup)
+	e.DELETE("/groups/:id", a.deleteGroup)
+	e.PUT("/groups/:id", a.updateGroup)
 
 	return a
 }
 
-func (a *API) listTemplates(w http.ResponseWriter, r *http.Request) {
+func (a *API) listTemplates(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 	tmpls, err := a.repo.ListTemplates(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list templates")
-		writeError(w, "unable to list templates", http.StatusInternalServerError)
-		return
+
+		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	_ = json.NewEncoder(w).Encode(tmpls)
+	return c.JSON(http.StatusOK, tmpls)
 }
 
-func (a *API) getTemplate(w http.ResponseWriter, r *http.Request) {
+func (a *API) getTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := c.Param("id")
 
 	tmpl, err := a.repo.GetTemplate(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("retrieve template")
-		writeError(w, "unable to retrieve template", http.StatusNotFound)
-		return
+		return echo.ErrNotFound
 	}
 
-	_ = json.NewEncoder(w).Encode(tmpl)
+	return c.JSON(http.StatusOK, tmpl)
 }
 
-func (a *API) createTemplate(w http.ResponseWriter, r *http.Request) {
+func (a *API) createTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	defer r.Body.Close()
-
 	var ctr autoscale.CreateTemplateRequest
-	err := json.NewDecoder(r.Body).Decode(&ctr)
-	if err != nil {
-		log.WithError(err).Error("create template")
-		writeError(w, "invalid create template request", http.StatusBadRequest)
-		return
+	if err := c.Bind(&ctr); err != nil {
+		return err
 	}
 
 	tmpl, err := a.repo.CreateTemplate(a.ctx, ctr)
 	if err != nil {
-		writeError(w, "unable to create template", http.StatusBadRequest)
-		return
+		log.WithError(err).Error("delete template")
+
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(&tmpl)
+	return c.JSON(http.StatusCreated, tmpl)
 }
 
-func (a *API) deleteTemplate(w http.ResponseWriter, r *http.Request) {
+func (a *API) deleteTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := c.Param("id")
 
 	err := a.repo.DeleteTemplate(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("delete template")
-		writeError(w, "unable to delete template", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	w.WriteHeader(204)
+	return c.NoContent(204)
 }
 
-func (a *API) listGroups(w http.ResponseWriter, r *http.Request) {
+func (a *API) listGroups(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
 	groups, err := a.repo.ListGroups(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list groups")
-		writeError(w, "unable to list groups", http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	_ = json.NewEncoder(w).Encode(groups)
+	return c.JSON(http.StatusOK, groups)
 }
 
-func (a *API) getGroup(w http.ResponseWriter, r *http.Request) {
+func (a *API) getGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := c.Param("id")
 
 	group, err := a.repo.GetGroup(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("get group")
-		writeError(w, "unable to retrieve group", http.StatusNotFound)
-		return
+		return echo.ErrNotFound
 	}
 
-	_ = json.NewEncoder(w).Encode(group)
+	return c.JSON(http.StatusOK, group)
 }
 
-func (a *API) createGroup(w http.ResponseWriter, r *http.Request) {
+func (a *API) createGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	defer r.Body.Close()
-
 	var cgr autoscale.CreateGroupRequest
-	err := json.NewDecoder(r.Body).Decode(&cgr)
-	if err != nil {
-		log.WithError(err).Error("invalid create group JSON")
-		writeError(w, "invalid create group request", http.StatusBadRequest)
-		return
+	if err := c.Bind(&cgr); err != nil {
+		return err
 	}
 
 	g, err := a.repo.CreateGroup(a.ctx, cgr)
 	if err != nil {
 		log.WithError(err).Error("create group")
-		writeError(w, "unable to create group", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(&g)
+	return c.JSON(http.StatusCreated, g)
 }
 
-func (a *API) deleteGroup(w http.ResponseWriter, r *http.Request) {
+func (a *API) deleteGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := c.Param("id")
 
 	err := a.repo.DeleteGroup(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("delete group")
-		writeError(w, "unable to delete group", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	w.WriteHeader(204)
+	return c.NoContent(204)
 }
 
-func (a *API) updateGroup(w http.ResponseWriter, r *http.Request) {
+func (a *API) updateGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(a.ctx)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	defer r.Body.Close()
+	id := c.Param("id")
 
 	var ugr autoscale.UpdateGroupRequest
-	err := json.NewDecoder(r.Body).Decode(&ugr)
-	if err != nil {
-		log.WithError(err).Error("can't update group'")
-		writeError(w, "invalid update group request", http.StatusBadRequest)
-		return
+	if err := c.Bind(&ugr); err != nil {
+		return err
 	}
 
 	g, err := a.repo.GetGroup(a.ctx, id)
 	if err != nil {
 		log.WithError(err).Error("can't retrieve group")
-		writeError(w, "invalid update group request", http.StatusNotFound)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
 	err = a.repo.SaveGroup(a.ctx, g)
 
 	if err != nil {
 		log.WithError(err).Error("update group")
-		writeError(w, "unable to update group", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(&g)
+	return c.JSON(http.StatusOK, g)
 }

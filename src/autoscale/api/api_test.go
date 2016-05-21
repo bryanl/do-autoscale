@@ -10,10 +10,28 @@ import (
 	"net/url"
 	"testing"
 
-	"golang.org/x/net/context"
+	"github.com/stretchr/testify/require"
 
-	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
+
+type apiTestFn func(repo autoscale.Repository, u *url.URL)
+
+func withAPITest(t *testing.T, fn apiTestFn) {
+	ctx := context.Background()
+	repo := &autoscale.MockRepository{}
+	api := New(ctx, repo)
+
+	ts := httptest.NewServer(api.Mux)
+	defer ts.Close()
+
+	u, err := url.Parse(ts.URL)
+	require.NoError(t, err)
+
+	fn(repo, u)
+
+	repo.AssertExpectations(t)
+}
 
 func TestListTemplates(t *testing.T) {
 	ogTmpls := []autoscale.Template{
@@ -31,20 +49,20 @@ func TestListTemplates(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/templates"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 200, res.StatusCode)
+	require.Equal(t, 200, res.StatusCode)
 
 	var tmpls []autoscale.Template
 	err = json.NewDecoder(res.Body).Decode(&tmpls)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Len(t, tmpls, 2)
+	require.Len(t, tmpls, 2)
 
 	repo.AssertExpectations(t)
 }
@@ -61,16 +79,16 @@ func TestDeleteTemplate(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/templates/1"
 
 	req, err := http.NewRequest("DELETE", u.String(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 204, res.StatusCode)
+	require.Equal(t, 204, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -89,20 +107,20 @@ func TestGetTemplate(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/templates/1"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 200, res.StatusCode)
+	require.Equal(t, 200, res.StatusCode)
 
 	var tmpl autoscale.Template
 	err = json.NewDecoder(res.Body).Decode(&tmpl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, "1", tmpl.ID)
+	require.Equal(t, "1", tmpl.ID)
 
 	repo.AssertExpectations(t)
 }
@@ -118,14 +136,14 @@ func TestGetMissingTemplate(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/templates/1"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 404, res.StatusCode)
+	require.Equal(t, 404, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -160,7 +178,7 @@ func TestCreateTemplate(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/templates"
 
 	req := []byte(`{
@@ -174,27 +192,27 @@ func TestCreateTemplate(t *testing.T) {
 
 	var buf bytes.Buffer
 	_, err = buf.Write(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := http.Post(u.String(), "application/json", &buf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 201, res.StatusCode)
+	require.Equal(t, 201, res.StatusCode)
 
 	var newTmpl autoscale.Template
 	err = json.NewDecoder(res.Body).Decode(&newTmpl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, tmpl, newTmpl)
+	require.Equal(t, tmpl, newTmpl)
 
 	repo.AssertExpectations(t)
 }
 
 func TestListGroups(t *testing.T) {
 	ogGroups := []autoscale.Group{
-		{ID: "12345"},
-		{ID: "6789"},
+		{ID: "12345", PolicyType: "value", MetricType: "load", Policy: &autoscale.ValuePolicy{}, Metric: &autoscale.FileLoad{}},
+		{ID: "6789", PolicyType: "value", MetricType: "load", Policy: &autoscale.ValuePolicy{}, Metric: &autoscale.FileLoad{}},
 	}
 
 	ctx := context.Background()
@@ -207,20 +225,14 @@ func TestListGroups(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 200, res.StatusCode)
-
-	var groups []autoscale.Group
-	err = json.NewDecoder(res.Body).Decode(&groups)
-	assert.NoError(t, err)
-
-	assert.Len(t, groups, 2)
+	require.Equal(t, 200, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -236,16 +248,16 @@ func TestDeleteGroup(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups/abc"
 
 	req, err := http.NewRequest("DELETE", u.String(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 204, res.StatusCode)
+	require.Equal(t, 204, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -265,7 +277,7 @@ func TestUpdateGroup(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups/abc"
 
 	j := `{
@@ -274,15 +286,15 @@ func TestUpdateGroup(t *testing.T) {
 
 	var buf bytes.Buffer
 	_, err = buf.WriteString(j)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, err := http.NewRequest("PUT", u.String(), &buf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 200, res.StatusCode)
+	require.Equal(t, 200, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -300,20 +312,20 @@ func TestGetGroup(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups/abc"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 200, res.StatusCode)
+	require.Equal(t, 200, res.StatusCode)
 
 	var group autoscale.Group
 	err = json.NewDecoder(res.Body).Decode(&group)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, "abc", group.ID)
+	require.Equal(t, "abc", group.ID)
 
 	repo.AssertExpectations(t)
 }
@@ -330,14 +342,14 @@ func TestGetMissingGroup(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups/1"
 
 	res, err := http.Get(u.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 404, res.StatusCode)
+	require.Equal(t, 404, res.StatusCode)
 
 	repo.AssertExpectations(t)
 }
@@ -371,7 +383,7 @@ func TestCreateGroup(t *testing.T) {
 	defer ts.Close()
 
 	u, err := url.Parse(ts.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u.Path = "/groups"
 
 	req := []byte(`{
@@ -384,19 +396,19 @@ func TestCreateGroup(t *testing.T) {
 
 	var buf bytes.Buffer
 	_, err = buf.Write(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := http.Post(u.String(), "application/json", &buf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
-	assert.Equal(t, 201, res.StatusCode)
+	require.Equal(t, 201, res.StatusCode)
 
 	var newGroup autoscale.Group
 	err = json.NewDecoder(res.Body).Decode(&newGroup)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, newGroup, group)
+	require.Equal(t, newGroup, group)
 
 	repo.AssertExpectations(t)
 }
