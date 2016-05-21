@@ -21,6 +21,7 @@ type Policy interface {
 	Scale(mn MetricNotifier, resourceCount int, value float64) int
 	WarmUpPeriod() time.Duration
 	Config() PolicyConfig
+	MarshalJSON() ([]byte, error)
 }
 
 type valuePolicyData struct {
@@ -150,4 +151,9 @@ func (p *ValuePolicy) Config() PolicyConfig {
 		"scaleDownValue": p.vpd.ScaleDownValue,
 		"warmUpPeriod":   p.warmUpPeriod,
 	}
+}
+
+// MarshalJSON converts policy to JSON.
+func (p *ValuePolicy) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&p.vpd)
 }
