@@ -128,7 +128,7 @@ func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 					log.WithError(err).Error("retrieve group")
 				}
 
-				go w.queueCheck(g)
+				go w.queueCheck(ctx, g)
 
 			case <-groupWatchTicker.C:
 				groups, err := w.repo.ListGroups(ctx)
@@ -170,10 +170,10 @@ func (w *Watcher) Stop() {
 }
 
 // check group to make sure it is at capacity.
-func (w *Watcher) queueCheck(g Group) {
+func (w *Watcher) queueCheck(ctx context.Context, g Group) {
 	checkDelay := 10 * time.Second
 
-	if err := w.check(g); err != nil {
+	if err := w.check(ctx, g); err != nil {
 		checkDelay = 15 * time.Second
 		w.log.
 			WithError(err).
@@ -191,7 +191,7 @@ func (w *Watcher) queueCheck(g Group) {
 	w.queueJob(g.Name)
 }
 
-func (w *Watcher) check(g Group) error {
+func (w *Watcher) check(ctx context.Context, g Group) error {
 	log := w.log.WithField("group-name", g.Name)
 
 	resource, err := g.Resource()
@@ -210,13 +210,27 @@ func (w *Watcher) check(g Group) error {
 		return err
 	}
 
+	newCount := policy.Scale(&g, count, value)
+
+	delta := newCount - count
+
 	log.WithFields(logrus.Fields{
-		"metric":         g.MetricType,
-		"metric-value":   value,
-		"resource-count": count,
+		"metric":       g.MetricType,
+		"metric-value": value,
+		"new-count":    newCount,
+		"delta":        delta,
 	}).Info("current metric value")
 
-	policy.Scale(&g, count, value)
+	changed, err := resource.Scale(ctx, g, delta, w.repo)
+	if err != nil {
+		return err
+	}
+
+	if changed {
+		wup := policy.WarmUpPeriod()
+		log.WithField("warm-up-duration", wup).Info("waiting for new service to warm up")
+		time.Sleep(wup)
+	}
 
 	return nil
 }

@@ -2,6 +2,7 @@ package autoscale
 
 import (
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -49,10 +50,11 @@ func TestGroup_IsValid(t *testing.T) {
 
 func TestConvertCreateGroupRequestToGroup(t *testing.T) {
 	policyJSON := []byte(`{
-    "scale_up_value": 0.2,
+    "scale_up_value": 0.8,
     "scale_up_by": 2,
-    "scale_down_value": 0.8,
-    "scale_down_by": 1
+    "scale_down_value": 0.2,
+    "scale_down_by": 1,
+    "warm_up_duration": "10s"
   }`)
 
 	metricJSON := []byte(`{
@@ -74,21 +76,28 @@ func TestConvertCreateGroupRequestToGroup(t *testing.T) {
 	group, err := cgr.ConvertToGroup(ctx)
 	require.NoError(t, err)
 
+	metric, err := NewFileLoad(FileLoadPath("/tmp"))
+	require.NoError(t, err)
+
+	policy, err := NewValuePolicy(ValuePolicyScale(0.8, 2, 0.2, 1))
+	require.NoError(t, err)
+
 	expected := &Group{
 		Name:         "name",
 		BaseName:     "base_name",
 		TemplateName: "template-name",
 		MetricType:   "load",
-		Metric: &FileLoad{
-			StatsDir: "/tmp",
-		},
-		PolicyType: "value",
-		Policy: &ValuePolicy{
-			ScaleUpValue:   0.2,
-			ScaleUpBy:      2,
-			ScaleDownValue: 0.8,
-			ScaleDownBy:    1,
-		},
+		Metric:       metric,
+		PolicyType:   "value",
+		Policy:       policy,
+	}
+
+	pc := PolicyConfig{
+		"scaleUpBy":      2,
+		"scaleUpValue":   0.8,
+		"scaleDownBy":    1,
+		"scaleDownValue": 0.2,
+		"warmUpPeriod":   10 * time.Second,
 	}
 
 	require.Equal(t, expected.Name, group.Name)
@@ -96,8 +105,7 @@ func TestConvertCreateGroupRequestToGroup(t *testing.T) {
 	require.Equal(t, expected.TemplateName, group.TemplateName)
 	require.Equal(t, expected.MetricType, group.MetricType)
 	require.Equal(t, expected.PolicyType, group.PolicyType)
-	require.Equal(t, expected.Metric, group.Metric)
-	require.Equal(t, expected.Policy, group.Policy)
+	require.Equal(t, pc, group.Policy.Config())
 }
 
 func TestConvertCreateGroupRequestToGroup_WithDefaults(t *testing.T) {
@@ -114,21 +122,32 @@ func TestConvertCreateGroupRequestToGroup_WithDefaults(t *testing.T) {
 	group, err := cgr.ConvertToGroup(ctx)
 	require.NoError(t, err)
 
+	metric, err := NewFileLoad(FileLoadPath("/tmp"))
+	require.NoError(t, err)
+
+	policy, err := NewValuePolicy(ValuePolicyScale(0.2, 2, 0.8, 1))
+	require.NoError(t, err)
+
 	expected := &Group{
 		Name:         "name",
 		BaseName:     "base_name",
 		TemplateName: "template-name",
 		MetricType:   "load",
-		Metric: &FileLoad{
-			StatsDir: "/tmp",
-		},
-		PolicyType: "value",
-		Policy: &ValuePolicy{
-			ScaleUpValue:   0.2,
-			ScaleUpBy:      2,
-			ScaleDownValue: 0.8,
-			ScaleDownBy:    1,
-		},
+		Metric:       metric,
+		PolicyType:   "value",
+		Policy:       policy,
+	}
+
+	pc := PolicyConfig{
+		"scaleUpBy":      2,
+		"scaleUpValue":   0.8,
+		"scaleDownBy":    1,
+		"scaleDownValue": 0.2,
+		"warmUpPeriod":   10 * time.Second,
+	}
+
+	mc := MetricConfig{
+		"statsDir": "/tmp",
 	}
 
 	require.Equal(t, expected.Name, group.Name)
@@ -136,10 +155,6 @@ func TestConvertCreateGroupRequestToGroup_WithDefaults(t *testing.T) {
 	require.Equal(t, expected.TemplateName, group.TemplateName)
 	require.Equal(t, expected.MetricType, group.MetricType)
 	require.Equal(t, expected.PolicyType, group.PolicyType)
-
-	vp := group.Policy.(*ValuePolicy)
-	require.Equal(t, defaultValuePolicy, *vp)
-
-	m := group.Metric.(*FileLoad)
-	require.Equal(t, defaultLoadMetric, *m)
+	require.Equal(t, pc, group.Policy.Config())
+	require.Equal(t, mc, group.Metric.Config())
 }

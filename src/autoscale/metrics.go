@@ -25,6 +25,9 @@ var (
 	DefaultConfig = Config{}
 )
 
+// MetricConfig is the configuration for a Metric.
+type MetricConfig map[string]interface{}
+
 // ResourceAllocation is information about an allocated resource.
 type ResourceAllocation struct {
 	Name    string
@@ -48,6 +51,7 @@ func Retrieve(metricType string) (Metrics, error) {
 type Metrics interface {
 	Measure(groupName string) (float64, error)
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
+	Config() MetricConfig
 }
 
 // RegisterMetric registers metrics.
@@ -67,7 +71,7 @@ func RegisterOfflineMetrics(ctx context.Context) {
 		path = p.(string)
 	}
 
-	m, err := NewFileLoad(path)
+	m, err := NewFileLoad(FileLoadPath(path))
 	if err != nil {
 		log.WithError(err).Error("unable to register file based load metric")
 		return

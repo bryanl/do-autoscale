@@ -106,6 +106,13 @@ func (l *PrometheusLoad) Update(groupName string, resourceAllocations []Resource
 	return ioutil.WriteFile(path, b, 0644)
 }
 
+// Config returns the configuration for this instance of PrometheusLoad.
+func (l *PrometheusLoad) Config() MetricConfig {
+	return MetricConfig{
+		"configDir": l.configDir,
+	}
+}
+
 func (l *PrometheusLoad) queryURL() string {
 	return "http://localhost:9090/api/v1/query"
 }

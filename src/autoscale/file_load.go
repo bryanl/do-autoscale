@@ -11,10 +11,68 @@ import (
 	"strings"
 )
 
+var (
+	// DefaultStatsDir is the default location for the file based stats metric.
+	DefaultStatsDir = "/tmp"
+)
+
+// FileLoadOption is a functional option for configuring FileLoad.
+type FileLoadOption func(*FileLoad) error
+
 // FileLoad returns hardcoded metrics from files. This is useful if you
 // are on a plane and want to test the autoscaler.
 type FileLoad struct {
 	StatsDir string `json:"stats_dir"`
+}
+
+var _ Metrics = (*FileLoad)(nil)
+
+// NewFileLoad creates a new FileLoad instance.
+func NewFileLoad(options ...FileLoadOption) (*FileLoad, error) {
+	fl := &FileLoad{}
+
+	for _, opt := range options {
+		if err := opt(fl); err != nil {
+			return nil, err
+		}
+	}
+
+	if fl.StatsDir == "" {
+		fl.StatsDir = DefaultStatsDir
+	}
+
+	return fl, nil
+}
+
+// FileLoadPath sets the director for FileLoad.
+func FileLoadPath(dir string) FileLoadOption {
+	return func(fl *FileLoad) error {
+		fi, err := os.Stat(dir)
+		if err != nil {
+			return fmt.Errorf("unable to stat %q: %v", dir, err)
+		}
+
+		if !fi.IsDir() {
+			return fmt.Errorf("%q is not a directory", dir)
+		}
+
+		fl.StatsDir = dir
+		return nil
+	}
+}
+
+// FileLoadFromJSON configures a FileLoad from JSON.
+func FileLoadFromJSON(in json.RawMessage) FileLoadOption {
+	return func(fl *FileLoad) error {
+		var c map[string]interface{}
+		if err := json.Unmarshal(in, &c); err != nil {
+			fl.StatsDir = DefaultStatsDir
+		} else {
+			fl.StatsDir = c["stats_dir"].(string)
+		}
+
+		return nil
+	}
 }
 
 // Value converts a FileLoad to JSON to be stored in the databases.
@@ -30,24 +88,6 @@ func (l *FileLoad) Scan(src interface{}) error {
 
 	b := []byte(src.([]uint8))
 	return json.Unmarshal(b, l)
-}
-
-var _ Metrics = (*FileLoad)(nil)
-
-// NewFileLoad creates a new FileLoad instance.
-func NewFileLoad(statsDir string) (*FileLoad, error) {
-	fi, err := os.Stat(statsDir)
-	if err != nil {
-		return nil, fmt.Errorf("unable to stat %q: %v", statsDir, err)
-	}
-
-	if !fi.IsDir() {
-		return nil, fmt.Errorf("%q is not a directory", statsDir)
-	}
-
-	return &FileLoad{
-		StatsDir: statsDir,
-	}, nil
 }
 
 // Measure returns the current value fro a group.
@@ -67,4 +107,11 @@ func (l *FileLoad) Update(groupName string, resourceAllocations []ResourceAlloca
 	// currently a no-op as the metrics are hard coded.
 
 	return nil
+}
+
+// Config returns the configuration for this instances of FileLoad.
+func (l *FileLoad) Config() MetricConfig {
+	return MetricConfig{
+		"statsDir": l.StatsDir,
+	}
 }

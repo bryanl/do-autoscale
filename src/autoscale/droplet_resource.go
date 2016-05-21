@@ -53,7 +53,7 @@ func NewDropletResource(doClient *doclient.Client, tag string, log *logrus.Entry
 	}, nil
 }
 
-// Actual returns the amount of actual Droplets.
+// Count returns the amount of actual Droplets.
 func (r *DropletResource) Count() (int, error) {
 	droplets, err := r.doClient.DropletsService.ListByTag(r.tag)
 	if err != nil {
@@ -64,13 +64,13 @@ func (r *DropletResource) Count() (int, error) {
 }
 
 // Scale sclaes DropletResources byN.
-func (r *DropletResource) Scale(ctx context.Context, g Group, byN int, repo Repository) error {
+func (r *DropletResource) Scale(ctx context.Context, g Group, byN int, repo Repository) (bool, error) {
 	if byN > 0 {
-		return r.scaleUp(ctx, g, byN, repo)
+		return true, r.scaleUp(ctx, g, byN, repo)
 	} else if byN < 0 {
-		return r.scaleDown(ctx, g, 0-byN, repo)
+		return false, r.scaleDown(ctx, g, 0-byN, repo)
 	} else {
-		return nil
+		return false, nil
 	}
 }
 

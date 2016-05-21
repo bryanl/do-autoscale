@@ -2,7 +2,6 @@ package autoscale
 
 import (
 	"fmt"
-	"math/rand"
 	"pkg/ctxutil"
 
 	"golang.org/x/net/context"
@@ -26,28 +25,26 @@ func NewLocalResource(ctx context.Context) ResourceManager {
 		log = logrus.NewEntry(l)
 	}
 
-	id := rand.Int()
-
-	log = log.WithField("resource-type", "local").WithField("id", id)
+	log = log.WithField("resource-type", "local")
 
 	return &LocalResource{
 		log: log,
 	}
 }
 
-// Actual is the actual number of resources available.
+// Count is the actual number of resources available.
 func (r *LocalResource) Count() (int, error) {
 	return r.count, nil
 }
 
 // Scale scales in memory resources byN.
-func (r *LocalResource) Scale(ctx context.Context, g Group, byN int, repo Repository) error {
+func (r *LocalResource) Scale(ctx context.Context, g Group, byN int, repo Repository) (bool, error) {
 	if byN > 0 {
-		return r.scaleUp(ctx, g, byN, repo)
+		return true, r.scaleUp(ctx, g, byN, repo)
 	} else if byN < 0 {
-		return r.scaleDown(ctx, g, 0-byN, repo)
+		return false, r.scaleDown(ctx, g, 0-byN, repo)
 	} else {
-		return nil
+		return false, nil
 	}
 }
 

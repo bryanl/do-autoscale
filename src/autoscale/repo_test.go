@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/go-errors/errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
@@ -17,17 +16,17 @@ type dbTestFn func(context.Context, Repository, sqlmock.Sqlmock)
 
 func withDBMock(t *testing.T, fn dbTestFn) {
 	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	defer db.Close()
 
 	repo, err := NewRepository(db)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	fn(ctx, repo, mock)
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestCreateTemplate(t *testing.T) {
@@ -59,9 +58,9 @@ func TestCreateTemplate(t *testing.T) {
 		}
 
 		tmpl, err := repo.CreateTemplate(ctx, ctr)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, expected, tmpl)
+		require.Equal(t, expected, tmpl)
 
 	})
 }
@@ -79,7 +78,7 @@ func TestCreateTemplate_InvalidName(t *testing.T) {
 
 		_, err := repo.CreateTemplate(ctx, ctr)
 
-		assert.True(t, errors.Is(err, ValidationErr))
+		require.True(t, errors.Is(err, ValidationErr))
 	})
 }
 
@@ -103,8 +102,8 @@ func TestGetTemplate(t *testing.T) {
 		}
 
 		tmpl, err := repo.GetTemplate(ctx, "a-template")
-		assert.NoError(t, err)
-		assert.Equal(t, ogTmpl, tmpl)
+		require.NoError(t, err)
+		require.Equal(t, ogTmpl, tmpl)
 	})
 }
 
@@ -118,8 +117,8 @@ func TestListTemplates(t *testing.T) {
 			AddRow("2", "template-2", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("3,4"), "userdata"))
 
 		tmpls, err := repo.ListTemplates(ctx)
-		assert.NoError(t, err)
-		assert.Len(t, tmpls, 2)
+		require.NoError(t, err)
+		require.Len(t, tmpls, 2)
 
 	})
 }
@@ -131,20 +130,21 @@ func TestDeleteTemplate(t *testing.T) {
 		mock.ExpectCommit()
 
 		err := repo.DeleteTemplate(ctx, "a-template")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
 func TestCreateGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
+		m, err := NewFileLoad()
+		require.NoError(t, err)
 
-		m := defaultLoadMetric
 		metricJSON, err := json.Marshal(&m)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		vp := defaultValuePolicy
 		vpJSON, err := json.Marshal(&vp)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		mock.ExpectBegin()
 		mock.ExpectQuery("INSERT into groups (.+) RETURNING id").
@@ -158,29 +158,45 @@ func TestCreateGroup(t *testing.T) {
 			BaseName:     "as",
 			TemplateName: "a-template",
 			MetricType:   "load",
+			Metric:       metricJSON,
 			PolicyType:   "value",
+			Policy:       vpJSON,
 		}
 
 		g, err := repo.CreateGroup(ctx, cgr)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, "abcdefg", g.ID)
+		require.Equal(t, "abcdefg", g.ID)
 	})
 }
 
 func TestCreateGroup_InvalidName(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
+		policyJSON := []byte(`{
+    "scale_up_value": 0.8,
+    "scale_up_by": 2,
+    "scale_down_value": 0.2,
+    "scale_down_by": 1,
+    "warm_up_duration": "10s"
+  }`)
+
+		metricJSON := []byte(`{
+    "stats_dir": "/tmp"
+  }`)
+
 		cgr := CreateGroupRequest{
 			Name:         "!!!",
 			BaseName:     "as",
 			MetricType:   "load",
+			Metric:       metricJSON,
 			PolicyType:   "value",
+			Policy:       policyJSON,
 			TemplateName: "a-template",
 		}
 
 		_, err := repo.CreateGroup(ctx, cgr)
 
-		assert.True(t, errors.Is(err, ValidationErr), fmt.Sprintf("received %#v", err))
+		require.True(t, errors.Is(err, ValidationErr), fmt.Sprintf("received %#v", err))
 
 	})
 }
@@ -189,7 +205,10 @@ func TestGetGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		groupColumns := []string{"id", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
 
-		mJSON, err := json.Marshal(defaultLoadMetric)
+		m, err := NewFileLoad()
+		require.NoError(t, err)
+
+		mJSON, err := json.Marshal(m)
 		require.NoError(t, err)
 
 		pJSON, err := json.Marshal(defaultValuePolicy)
@@ -211,7 +230,10 @@ func TestListGroups(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		groupColumns := []string{"id", "name", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
 
-		mJSON, err := json.Marshal(defaultLoadMetric)
+		m, err := NewFileLoad()
+		require.NoError(t, err)
+
+		mJSON, err := json.Marshal(m)
 		require.NoError(t, err)
 
 		pJSON, err := json.Marshal(defaultValuePolicy)
@@ -235,14 +257,18 @@ func TestDeleteGroup(t *testing.T) {
 		mock.ExpectCommit()
 
 		err := repo.DeleteGroup(ctx, "a-group")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
 func TestUpdateGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
-		m := defaultLoadMetric
-		p := defaultValuePolicy
+		m, err := NewFileLoad()
+		require.NoError(t, err)
+
+		p, err := NewValuePolicy()
+		require.NoError(t, err)
+		p.vpd = defaultValuePolicy
 
 		mock.ExpectBegin()
 		mock.ExpectExec("UPDATE groups").WithArgs(&m, &p, "group").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -254,12 +280,12 @@ func TestUpdateGroup(t *testing.T) {
 			BaseName:     "as",
 			TemplateName: "a-template",
 			MetricType:   "load",
-			Metric:       &m,
+			Metric:       m,
 			PolicyType:   "value",
-			Policy:       &p,
+			Policy:       p,
 		}
 
-		err := repo.SaveGroup(ctx, g)
-		assert.NoError(t, err)
+		err = repo.SaveGroup(ctx, g)
+		require.NoError(t, err)
 	})
 }

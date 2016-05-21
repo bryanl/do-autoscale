@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"pkg/ctxutil"
 	"pkg/doclient"
 	"regexp"
 	"strings"
@@ -35,15 +34,12 @@ var (
 		return NewDropletResource(doClient, newTag, log)
 	}
 
-	defaultValuePolicy = ValuePolicy{
-		ScaleUpValue:   0.2,
+	defaultValuePolicy = valuePolicyData{
+		ScaleUpValue:   0.8,
 		ScaleUpBy:      2,
-		ScaleDownValue: 0.8,
+		ScaleDownValue: 0.2,
 		ScaleDownBy:    1,
-	}
-
-	defaultLoadMetric = FileLoad{
-		StatsDir: "/tmp",
+		WarmUpDuration: "10s",
 	}
 )
 
@@ -95,8 +91,6 @@ type CreateGroupRequest struct {
 
 // ConvertToGroup convertes a CreateGroupRequest to a Group
 func (cgr *CreateGroupRequest) ConvertToGroup(ctx context.Context) (*Group, error) {
-	log := ctxutil.LogFromContext(ctx)
-
 	g := &Group{
 		Name:         cgr.Name,
 		BaseName:     cgr.BaseName,
@@ -107,12 +101,12 @@ func (cgr *CreateGroupRequest) ConvertToGroup(ctx context.Context) (*Group, erro
 
 	switch g.MetricType {
 	case "load":
-		var fileLoad FileLoad
-		if err := json.Unmarshal(cgr.Metric, &fileLoad); err != nil {
-			log.WithError(err).Warning("unable to load metric, using defualt load metric")
-			fileLoad = defaultLoadMetric
+		fl, err := NewFileLoad(FileLoadFromJSON(cgr.Metric))
+		if err != nil {
+			return nil, err
 		}
-		g.Metric = &fileLoad
+
+		g.Metric = fl
 
 	default:
 		return nil, fmt.Errorf("unknown metric type: %q", g.MetricType)
@@ -120,15 +114,15 @@ func (cgr *CreateGroupRequest) ConvertToGroup(ctx context.Context) (*Group, erro
 
 	switch g.PolicyType {
 	case "value":
-		var vp ValuePolicy
-		if err := json.Unmarshal(cgr.Policy, &vp); err != nil {
-			log.WithError(err).Warning("unable to load policy, using default value policy")
-			vp = defaultValuePolicy
+		vp, err := NewValuePolicy(ValuePolicyFromJSON(cgr.Policy))
+		if err != nil {
+			return nil, err
 		}
-		g.Policy = &vp
+
+		g.Policy = vp
 
 	default:
-		return nil, fmt.Errorf("unknown policty type: %q", g.PolicyType)
+		return nil, fmt.Errorf("unknown policy type: %q", g.PolicyType)
 	}
 
 	return g, nil

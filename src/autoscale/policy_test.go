@@ -1,9 +1,11 @@
 package autoscale
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValuePolicy(t *testing.T) {
@@ -19,8 +21,16 @@ func TestValuePolicy(t *testing.T) {
 		{resourceCount: 1, value: 0.1, expected: 0, shouldNotify: true},
 	}
 
-	vp, err := NewValuePolicy(0.8, 3, 0.2, 2)
-	assert.NoError(t, err)
+	jsonMessage := []byte(`{
+    "scale_up_value": 0.8,
+    "scale_up_by": 3,
+    "scale_down_value": 0.2,
+    "scale_down_by": 2,
+    "warm_up_duration": "1m"
+  }`)
+
+	vp, err := NewValuePolicy(ValuePolicyFromJSON(jsonMessage))
+	require.NoError(t, err)
 
 	for _, c := range cases {
 		mn := &MockMetricNotifier{}
@@ -30,7 +40,7 @@ func TestValuePolicy(t *testing.T) {
 		}
 		v := vp.Scale(mn, c.resourceCount, c.value)
 
-		assert.Equal(t, c.expected, v)
+		assert.Equal(t, c.expected, v, fmt.Sprintf("case: %#v\n", c))
 
 		assert.True(t, mn.AssertExpectations(t))
 	}
