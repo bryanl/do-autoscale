@@ -50,6 +50,8 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		ctx:  ctx,
 	}
 
+	log := ctxutil.LogFromContext(ctx)
+
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			reqID := c.Request().Header().Get("X-Request-Id")
@@ -60,13 +62,13 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 			}
 
 			newCtx := context.WithValue(c, "RequestID", reqID)
+			newCtx = context.WithValue(newCtx, "log", log)
 			c.SetNetContext(newCtx)
 
 			return next(c)
 		}
 	})
 
-	log := ctxutil.LogFromContext(ctx)
 	logmw := echologger.NewWithNameAndLogger("autoscale", log)
 	e.Use(logmw)
 
@@ -88,7 +90,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 }
 
 func (a *API) listTemplates(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 	tmpls, err := a.repo.ListTemplates(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list templates")
@@ -100,7 +102,7 @@ func (a *API) listTemplates(c echo.Context) error {
 }
 
 func (a *API) getTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
@@ -114,7 +116,7 @@ func (a *API) getTemplate(c echo.Context) error {
 }
 
 func (a *API) createTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	var ctr autoscale.CreateTemplateRequest
 	if err := c.Bind(&ctr); err != nil {
@@ -132,7 +134,7 @@ func (a *API) createTemplate(c echo.Context) error {
 }
 
 func (a *API) deleteTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
@@ -146,7 +148,7 @@ func (a *API) deleteTemplate(c echo.Context) error {
 }
 
 func (a *API) listGroups(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	groups, err := a.repo.ListGroups(a.ctx)
 	if err != nil {
@@ -158,7 +160,7 @@ func (a *API) listGroups(c echo.Context) error {
 }
 
 func (a *API) getGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
@@ -172,7 +174,7 @@ func (a *API) getGroup(c echo.Context) error {
 }
 
 func (a *API) createGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	var cgr autoscale.CreateGroupRequest
 	if err := c.Bind(&cgr); err != nil {
@@ -189,7 +191,7 @@ func (a *API) createGroup(c echo.Context) error {
 }
 
 func (a *API) deleteGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
@@ -203,7 +205,7 @@ func (a *API) deleteGroup(c echo.Context) error {
 }
 
 func (a *API) updateGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(a.ctx)
+	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
