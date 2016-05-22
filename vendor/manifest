@@ -264,6 +264,13 @@
 			"path": "/context"
 		},
 		{
+			"importpath": "golang.org/x/net/dict",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "0c607074acd38c5f23d1344dfe74c977464d1257",
+			"branch": "master",
+			"path": "/dict"
+		},
+		{
 			"importpath": "golang.org/x/oauth2",
 			"repository": "https://go.googlesource.com/oauth2",
 			"revision": "e86e2718db89775a4604abc10a5d3a5672e7336e",
