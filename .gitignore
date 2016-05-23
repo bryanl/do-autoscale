@@ -2,6 +2,7 @@
 bin
 /pkg
 vendor/pkg
+dev.env
 
 config/prom-configs/*
 !config/prom-configs/.gitkeep
