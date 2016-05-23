@@ -38,7 +38,7 @@ func TestValuePolicy(t *testing.T) {
 		if c.shouldNotify {
 			mn.On("MetricNotify").Return(nil)
 		}
-		v := vp.Scale(mn, c.resourceCount, c.value)
+		v := vp.CalculateSize(mn, c.resourceCount, c.value)
 
 		assert.Equal(t, c.expected, v, fmt.Sprintf("case: %#v\n", c))
 

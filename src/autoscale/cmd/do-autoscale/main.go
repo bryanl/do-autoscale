@@ -78,7 +78,10 @@ func main() {
 		log.WithError(err).Fatal("unable to setup data repository")
 	}
 
-	watcher := autoscale.NewWatcher(ctx, repo)
+	watcher, err := autoscale.NewWatcher(ctx, repo)
+	if err != nil {
+		log.WithError(err).Fatal("unable to setup watcher")
+	}
 	go func() {
 		if _, err := watcher.Watch(ctx); err != nil {
 			log.WithError(err).Fatal("unable to start watcher")

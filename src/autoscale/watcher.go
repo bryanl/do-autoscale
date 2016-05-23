@@ -37,13 +37,18 @@ func makeJobQueue() chan watchedJob {
 }
 
 // NewWatcher creates an instance of Watcher.
-func NewWatcher(ctx context.Context, repo Repository) *Watcher {
+func NewWatcher(ctx context.Context, repo Repository) (*Watcher, error) {
+	gm, err := NewGroupMonitor(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Watcher{
 		repo:         repo,
-		groupMonitor: NewGroupMonitor(ctx, repo),
+		groupMonitor: gm,
 		ctx:          ctx,
 		workChan:     makeJobQueue(),
-	}
+	}, nil
 }
 
 func (w *Watcher) log() *logrus.Entry {
@@ -86,6 +91,7 @@ func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 	}
 
 	w.groupMonitor.Start(func(groupName string) {
+		log.WithField("group", groupName).Info("watch group")
 		w.workChan <- watchedJob{name: groupName}
 	})
 

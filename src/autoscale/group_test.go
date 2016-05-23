@@ -79,7 +79,7 @@ func TestConvertCreateGroupRequestToGroup(t *testing.T) {
 	metric, err := NewFileLoad(FileLoadPath("/tmp"))
 	require.NoError(t, err)
 
-	policy, err := NewValuePolicy(ValuePolicyScale(0.8, 2, 0.2, 1))
+	policy, err := NewValuePolicy(ValuePolicyScale(0, 0.8, 2, 0.2, 1))
 	require.NoError(t, err)
 
 	expected := &Group{
@@ -125,7 +125,7 @@ func TestConvertCreateGroupRequestToGroup_WithDefaults(t *testing.T) {
 	metric, err := NewFileLoad(FileLoadPath("/tmp"))
 	require.NoError(t, err)
 
-	policy, err := NewValuePolicy(ValuePolicyScale(0.2, 2, 0.8, 1))
+	policy, err := NewValuePolicy(ValuePolicyScale(0, 0.2, 2, 0.8, 1))
 	require.NoError(t, err)
 
 	expected := &Group{

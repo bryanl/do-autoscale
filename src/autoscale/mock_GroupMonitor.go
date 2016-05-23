@@ -6,32 +6,14 @@ type MockGroupMonitor struct {
 	mock.Mock
 }
 
-// Start provides a mock function with given fields: newGroupFn
-func (_m *MockGroupMonitor) Start(newGroupFn NewGroupFn) error {
-	ret := _m.Called(newGroupFn)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(NewGroupFn) error); ok {
-		r0 = rf(newGroupFn)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+// Start provides a mock function with given fields: fn
+func (_m *MockGroupMonitor) Start(fn AfterMonitorFn) {
+	_m.Called(fn)
 }
 
 // Stop provides a mock function with given fields:
-func (_m *MockGroupMonitor) Stop() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+func (_m *MockGroupMonitor) Stop() {
+	_m.Called()
 }
 
 // InRunList provides a mock function with given fields: groupName
