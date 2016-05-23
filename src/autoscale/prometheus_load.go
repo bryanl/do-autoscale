@@ -14,10 +14,19 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+const (
+	// PrometheusURLContextKey is the context key for the prometheus URL.
+	PrometheusURLContextKey = "prometheusURL"
+
+	// PrometheusConfigDirContextKey is the context key for the prometheus config dir.
+	PrometheusConfigDirContextKey = "prometheusConfigDir"
+)
+
 // PrometheusLoad based on promeetheus metrics.
 type PrometheusLoad struct {
-	log       *logrus.Entry
-	configDir string
+	log           *logrus.Entry
+	configDir     string
+	prometheusURL string
 }
 
 // NewPrometheusLoad creates an instance of PrometheusLoad.
@@ -28,7 +37,12 @@ func NewPrometheusLoad(ctx context.Context) (*PrometheusLoad, error) {
 		log = logrus.NewEntry(logger)
 	}
 
-	configDir := ctx.Value("prometheusConfigDir").(string)
+	promURL := ctxutil.StringFromContext(ctx, PrometheusURLContextKey)
+	if promURL == "" {
+		return nil, fmt.Errorf("prometheus url wasn't supplied in context")
+	}
+
+	configDir := ctxutil.StringFromContext(ctx, PrometheusConfigDirContextKey)
 	if configDir == "" {
 		var err error
 		if configDir, err = ioutil.TempDir("", "promConfig"); err != nil {
@@ -37,12 +51,14 @@ func NewPrometheusLoad(ctx context.Context) (*PrometheusLoad, error) {
 	}
 
 	log.WithFields(logrus.Fields{
-		"configDir": configDir,
+		"configDir":     configDir,
+		"prometheusURL": promURL,
 	}).Info("setting config dir for prometheus")
 
 	return &PrometheusLoad{
-		log:       log,
-		configDir: configDir,
+		log:           log,
+		configDir:     configDir,
+		prometheusURL: promURL,
 	}, nil
 }
 
@@ -52,9 +68,8 @@ var _ Metrics = (*PrometheusLoad)(nil)
 func (l *PrometheusLoad) Measure(groupName string) (float64, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
-	// TODO this should be a different func
 	config := prometheus.Config{
-		Address: "http://localhost:9090",
+		Address: l.prometheusURL,
 	}
 	pClient, err := prometheus.New(config)
 	if err != nil {

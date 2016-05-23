@@ -26,6 +26,7 @@ type Specification struct {
 	UseFileStats           bool   `envconfig:"use_file_stats" default:"false"`
 	FileStatDir            string `envconfig:"file_stat_dir"`
 	PrometheusConfigDir    string `envconfig:"prometheus_config_dir"`
+	PrometheusURL          string `envconfig:"prometheus_url" required:"true"`
 	RegisterOfflineMetrics bool   `envconfig:"register_offline_metrics" default:"false"`
 	RegisterDefaultMetrics bool   `envconfig:"register_default_metrics" default:"true"`
 	UseMemoryResources     bool   `envconfig:"use_memory_resources" default:"false"`
@@ -43,6 +44,13 @@ func main() {
 
 	ctx := context.WithValue(context.Background(), "log", log.WithField("env", s.Env))
 
+	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
+
+	if s.RegisterDefaultMetrics {
+		ctx = context.WithValue(ctx, autoscale.PrometheusConfigDirContextKey, s.PrometheusConfigDir)
+		autoscale.RegisterDefaultMetrics(ctx)
+	}
+
 	if s.UseMemoryResources {
 		rm := autoscale.NewLocalResource(ctx)
 		log.Info("using memory resources")
@@ -53,11 +61,6 @@ func main() {
 
 	if s.RegisterDefaultMetrics && s.RegisterOfflineMetrics {
 		log.Fatal("can't specify offline and default metrics at the same time")
-	}
-
-	if s.RegisterDefaultMetrics {
-		ctx = context.WithValue(ctx, "prometheusConfigDir", s.PrometheusConfigDir)
-		autoscale.RegisterDefaultMetrics(ctx)
 	}
 
 	if s.RegisterOfflineMetrics {
