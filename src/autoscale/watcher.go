@@ -13,6 +13,7 @@ import (
 
 var (
 	groupWatchDuration = 5 * time.Second
+	requeueDelay       = 10 * time.Second
 )
 
 type watchedJob struct {
@@ -147,10 +148,8 @@ func (w *Watcher) Stop() {
 
 // check group to make sure it is at capacity.
 func (w *Watcher) queueCheck(ctx context.Context, g Group) {
-	checkDelay := 10 * time.Second
-
 	if err := w.check(ctx, g); err != nil {
-		checkDelay = 15 * time.Second
+		checkDelay := requeueDelay * 2
 		w.log().
 			WithError(err).
 			WithField("delay", checkDelay).
@@ -158,7 +157,7 @@ func (w *Watcher) queueCheck(ctx context.Context, g Group) {
 	}
 
 	if w.groupMonitor.InRunList(g.Name) {
-		timer := time.NewTimer(checkDelay)
+		timer := time.NewTimer(requeueDelay)
 		<-timer.C
 
 		w.queueJob(g.Name)
@@ -193,7 +192,7 @@ func (w *Watcher) check(ctx context.Context, g Group) error {
 		"metric-value": value,
 		"new-count":    newCount,
 		"delta":        delta,
-	}).Info("current metric value")
+	}).Info("group change status")
 
 	changed, err := resource.Scale(ctx, g, delta, w.repo)
 	if err != nil {
