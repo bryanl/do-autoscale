@@ -5,7 +5,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// LogFromContext extracts a long from a context.Context
+// LogFromContext extracts a log from a context.Context
 func LogFromContext(ctx context.Context) *logrus.Entry {
 	v := ctx.Value("log")
 
@@ -16,5 +16,19 @@ func LogFromContext(ctx context.Context) *logrus.Entry {
 		logger := logrus.New()
 		log := logrus.NewEntry(logger)
 		return log
+	}
+}
+
+// StringFromContext extracts a string from a context.Context
+func StringFromContext(ctx context.Context, key string) string {
+	s := ctx.Value(key)
+
+	switch s.(type) {
+	case string:
+		return s.(string)
+	default:
+		log := LogFromContext(ctx)
+		log.WithField("key", key).Warn("context key was not present")
+		return ""
 	}
 }
