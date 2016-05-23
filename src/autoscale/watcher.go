@@ -101,11 +101,17 @@ func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 			select {
 			case job := <-w.workChan:
 				log := log.WithField("group-name", job.name)
-				log.Info("watching group")
+
+				if !w.groupMonitor.InRunList(job.name) {
+					continue
+				}
 
 				g, err := w.repo.GetGroup(ctx, job.name)
 				if err != nil {
-					log.WithError(err).Error("retrieve group")
+					if err != ObjectMissingErr {
+						log.WithError(err).Error("retrieve group")
+					}
+					continue
 				}
 
 				go w.queueCheck(ctx, g)

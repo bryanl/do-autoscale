@@ -12,6 +12,9 @@ import (
 var (
 	// ValidationErr is returned when the model isn't valid.
 	ValidationErr = errors.Errorf("is not valid")
+
+	// ObjectMissingErr is returned with the requested object does not exist.
+	ObjectMissingErr = errors.Errorf("object does not exist")
 )
 
 // Repository maps data to an entity models.
@@ -82,6 +85,10 @@ func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) 
 func (r *pgRepo) GetTemplate(ctx context.Context, name string) (Template, error) {
 	var t Template
 	if err := r.db.Get(&t, sqlGetTemplate, name); err != nil {
+		if err == sql.ErrNoRows {
+			return Template{}, ObjectMissingErr
+		}
+
 		return Template{}, err
 	}
 
@@ -172,6 +179,10 @@ func (r *pgRepo) GetGroup(ctx context.Context, name string) (Group, error) {
 	var metric, policy interface{}
 
 	if err := row.Scan(&id, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
+		if err == sql.ErrNoRows {
+			return Group{}, ObjectMissingErr
+		}
+
 		return Group{}, err
 	}
 
