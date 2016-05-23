@@ -187,7 +187,7 @@ func (g *Group) MetricsValue() (float64, error) {
 	logrus.WithFields(logrus.Fields{
 		"group-name":  g.Name,
 		"metric-type": g.MetricType,
-	}).Info("fetching metric value for group")
+	}).Debug("fetching metric value for group")
 
 	m, err := Retrieve(g.MetricType)
 	if err != nil {
