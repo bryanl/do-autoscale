@@ -161,6 +161,7 @@ func (g *Group) Resource() (ResourceManager, error) {
 
 // MetricNotify notifies the metrics system that the instance configuration has changed.
 func (g *Group) MetricNotify() error {
+	logrus.Info("notifying metric configuration has changed")
 	r, err := g.Resource()
 	if err != nil {
 		return err
@@ -171,11 +172,6 @@ func (g *Group) MetricNotify() error {
 		logrus.WithError(err).Error("unable to retrieve allocated resources")
 		return err
 	}
-
-	logrus.WithFields(logrus.Fields{
-		"group-name":  g.Name,
-		"metric-type": g.MetricType,
-	}).Info("fetching metric for group")
 
 	m, err := Retrieve(g.MetricType)
 	if err != nil {

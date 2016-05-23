@@ -6,6 +6,7 @@ type MockMetrics struct {
 	mock.Mock
 }
 
+// Measure provides a mock function with given fields: groupName
 func (_m *MockMetrics) Measure(groupName string) (float64, error) {
 	ret := _m.Called(groupName)
 
@@ -25,6 +26,8 @@ func (_m *MockMetrics) Measure(groupName string) (float64, error) {
 
 	return r0, r1
 }
+
+// Update provides a mock function with given fields: groupName, resourceAllocations
 func (_m *MockMetrics) Update(groupName string, resourceAllocations []ResourceAllocation) error {
 	ret := _m.Called(groupName, resourceAllocations)
 
@@ -33,6 +36,20 @@ func (_m *MockMetrics) Update(groupName string, resourceAllocations []ResourceAl
 		r0 = rf(groupName, resourceAllocations)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Config provides a mock function with given fields:
+func (_m *MockMetrics) Config() MetricConfig {
+	ret := _m.Called()
+
+	var r0 MetricConfig
+	if rf, ok := ret.Get(0).(func() MetricConfig); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(MetricConfig)
 	}
 
 	return r0

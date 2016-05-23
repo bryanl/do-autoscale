@@ -6,6 +6,7 @@ type MockMetricNotifier struct {
 	mock.Mock
 }
 
+// MetricNotify provides a mock function with given fields:
 func (_m *MockMetricNotifier) MetricNotify() error {
 	ret := _m.Called()
 

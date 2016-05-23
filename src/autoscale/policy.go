@@ -18,13 +18,14 @@ type PolicyConfig map[string]interface{}
 
 // Policy determine how many resources there should be at the current point in time.
 type Policy interface {
-	Scale(mn MetricNotifier, resourceCount int, value float64) int
+	CalculateSize(mn MetricNotifier, resourceCount int, value float64) int
 	WarmUpPeriod() time.Duration
 	Config() PolicyConfig
 	MarshalJSON() ([]byte, error)
 }
 
 type valuePolicyData struct {
+	MinSize        int     `json:"min_size"`
 	ScaleUpValue   float64 `json:"scale_up_value"`
 	ScaleUpBy      int     `json:"scale_up_by"`
 	ScaleDownValue float64 `json:"scale_down_value"`
@@ -60,7 +61,7 @@ func NewValuePolicy(options ...ValuePolicyOption) (*ValuePolicy, error) {
 }
 
 // ValuePolicyScale sets scale parameters for a ValuePolicy.
-func ValuePolicyScale(scaleUpValue float64, scaleUpBy int, scaleDownValue float64, scaleDownBy int) ValuePolicyOption {
+func ValuePolicyScale(minSize int, scaleUpValue float64, scaleUpBy int, scaleDownValue float64, scaleDownBy int) ValuePolicyOption {
 	return func(vp *ValuePolicy) error {
 		vp.vpd.ScaleUpValue = scaleUpValue
 		vp.vpd.ScaleUpBy = scaleUpBy
@@ -112,13 +113,12 @@ func (p *ValuePolicy) Scan(src interface{}) error {
 	return ValuePolicyFromJSON(b)(p)
 }
 
-// Scale returns the amount of items that should exist given a value. If the new value is
+// CalculateSize returns the amount of items that should exist given a value. If the new value is
 // less than 0, then Scale will return 0.
-func (p *ValuePolicy) Scale(mn MetricNotifier, resourceCount int, value float64) int {
+func (p *ValuePolicy) CalculateSize(mn MetricNotifier, resourceCount int, value float64) int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	ogCount := resourceCount
 	newCount := resourceCount
 	if value <= p.vpd.ScaleDownValue {
 		newCount = newCount - p.vpd.ScaleDownBy
@@ -126,12 +126,8 @@ func (p *ValuePolicy) Scale(mn MetricNotifier, resourceCount int, value float64)
 		newCount = newCount + p.vpd.ScaleUpBy
 	}
 
-	if newCount < 0 {
-		newCount = 0
-	}
-
-	if ogCount != newCount {
-		mn.MetricNotify()
+	if newCount <= p.vpd.MinSize {
+		return p.vpd.MinSize
 	}
 
 	return newCount

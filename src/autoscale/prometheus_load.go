@@ -70,8 +70,13 @@ func (l *PrometheusLoad) Measure(groupName string) (float64, error) {
 
 	switch t := value.(type) {
 	case model.Vector:
-		sample := value.(model.Vector)[0]
-		return float64(sample.Value), nil
+		var f float64
+		v := value.(model.Vector)
+		if len(v) > 0 {
+			f = float64(v[0].Value)
+		}
+		return f, nil
+
 	default:
 		l.log.WithField("query-value-type", t).Warning("unknown prometheus query response")
 		return 0, nil
