@@ -155,10 +155,6 @@ func (w *Watcher) queueCheck(ctx context.Context, g Group) {
 			WithError(err).
 			WithField("delay", checkDelay).
 			Error("check failed and will be tried again")
-	} else {
-		w.log().
-			WithField("delay", checkDelay).
-			Info("scheduling future check")
 	}
 
 	if w.groupMonitor.InRunList(g.Name) {
