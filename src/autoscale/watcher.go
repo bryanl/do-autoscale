@@ -199,10 +199,11 @@ func (w *Watcher) check(ctx context.Context, g Group) error {
 		return err
 	}
 
+	if err := g.MetricNotify(); err != nil {
+		log.WithError(err).Error("notifying metric of current config")
+	}
+
 	if changed {
-		if err := g.MetricNotify(); err != nil {
-			log.WithError(err).Error("notifying metric of new config")
-		}
 		wup := policy.WarmUpPeriod()
 		log.WithField("warm-up-duration", wup).Info("waiting for new service to warm up")
 		time.Sleep(wup)

@@ -116,7 +116,7 @@ func (l *PrometheusLoad) Update(groupName string, resourceAllocations []Resource
 	targetGroups := []targetGroup{tg}
 
 	path := fmt.Sprintf("%s/%s.json", l.configDir, groupName)
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(l.configDir, 0755); err != nil {
 		return err
 	}
 
@@ -125,9 +125,11 @@ func (l *PrometheusLoad) Update(groupName string, resourceAllocations []Resource
 		return err
 	}
 
-	l.log.WithField("path", path).Info("writing prometheus target file")
+	if err := ioutil.WriteFile(path, b, 0644); err != nil {
+		return fmt.Errorf("unable to write metrics json: %v", err)
+	}
 
-	return ioutil.WriteFile(path, b, 0644)
+	return nil
 }
 
 // Config returns the configuration for this instance of PrometheusLoad.
