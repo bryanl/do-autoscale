@@ -11,5 +11,5 @@ scrape_configs:
   - job_name: 'autoscale'
     scrape_interval: 1s
     file_sd_configs:
-      - names: ['/etc/prometheus/configs/*.json']
+      - names: ['/var/lib/autoscale/prometheus/*.json']
 

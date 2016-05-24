@@ -19,15 +19,16 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./config/prom-configs:/etc/prometheus/configs
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /var/lib/autoscale/prometheus
     networks:
       - autoscale
-
   app:
     build: .
     image: do-autoscale
     env_file: dev.env
+    volumes_from:
+      - prometheus
     networks:
       - autoscale
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"pkg/ctxutil"
 	"time"
 
@@ -115,6 +116,9 @@ func (l *PrometheusLoad) Update(groupName string, resourceAllocations []Resource
 	targetGroups := []targetGroup{tg}
 
 	path := fmt.Sprintf("%s/%s.json", l.configDir, groupName)
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return err
+	}
 
 	b, err := json.Marshal(&targetGroups)
 	if err != nil {
@@ -131,10 +135,6 @@ func (l *PrometheusLoad) Config() MetricConfig {
 	return MetricConfig{
 		"configDir": l.configDir,
 	}
-}
-
-func (l *PrometheusLoad) queryURL() string {
-	return "http://localhost:9090/api/v1/query"
 }
 
 type targetGroup struct {
