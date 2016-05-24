@@ -31,7 +31,8 @@ func TestGroupMonitor(t *testing.T) {
 	runList := &MockRunList{}
 	for _, g := range groups {
 		runList.On("Add", g.Name).Return(nil)
-		runList.On("IsRunning", g.Name).Return(false, nil)
+		runList.On("IsRunning", g.Name).Return(false, nil).Once()
+		runList.On("IsRunning", g.Name).Return(true, nil)
 	}
 	runList.On("Reset").Return(nil)
 
