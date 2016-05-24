@@ -13,15 +13,15 @@ func TestValuePolicy(t *testing.T) {
 		resourceCount int
 		value         float64
 		expected      int
-		shouldNotify  bool
 	}{
 		{resourceCount: 5, value: 0.5, expected: 5},
-		{resourceCount: 5, value: 0.1, expected: 3, shouldNotify: true},
-		{resourceCount: 5, value: 0.8, expected: 8, shouldNotify: true},
-		{resourceCount: 1, value: 0.1, expected: 0, shouldNotify: true},
+		{resourceCount: 5, value: 0.1, expected: 3},
+		{resourceCount: 5, value: 0.8, expected: 8},
+		{resourceCount: 1, value: 0.1, expected: 1},
 	}
 
 	jsonMessage := []byte(`{
+    "min_size": 1,
     "scale_up_value": 0.8,
     "scale_up_by": 3,
     "scale_down_value": 0.2,
@@ -33,15 +33,7 @@ func TestValuePolicy(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, c := range cases {
-		mn := &MockMetricNotifier{}
-
-		if c.shouldNotify {
-			mn.On("MetricNotify").Return(nil)
-		}
-		v := vp.CalculateSize(mn, c.resourceCount, c.value)
-
+		v := vp.CalculateSize(c.resourceCount, c.value)
 		assert.Equal(t, c.expected, v, fmt.Sprintf("case: %#v\n", c))
-
-		assert.True(t, mn.AssertExpectations(t))
 	}
 }

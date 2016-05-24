@@ -18,7 +18,7 @@ type PolicyConfig map[string]interface{}
 
 // Policy determine how many resources there should be at the current point in time.
 type Policy interface {
-	CalculateSize(mn MetricNotifier, resourceCount int, value float64) int
+	CalculateSize(resourceCount int, value float64) int
 	WarmUpPeriod() time.Duration
 	Config() PolicyConfig
 	MarshalJSON() ([]byte, error)
@@ -115,7 +115,7 @@ func (p *ValuePolicy) Scan(src interface{}) error {
 
 // CalculateSize returns the amount of items that should exist given a value. If the new value is
 // less than 0, then Scale will return 0.
-func (p *ValuePolicy) CalculateSize(mn MetricNotifier, resourceCount int, value float64) int {
+func (p *ValuePolicy) CalculateSize(resourceCount int, value float64) int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

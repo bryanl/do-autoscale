@@ -183,7 +183,7 @@ func (w *Watcher) check(ctx context.Context, g Group) error {
 		return err
 	}
 
-	newCount := policy.CalculateSize(&g, count, value)
+	newCount := policy.CalculateSize(count, value)
 
 	delta := newCount - count
 
