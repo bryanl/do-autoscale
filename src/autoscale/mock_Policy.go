@@ -8,13 +8,13 @@ type MockPolicy struct {
 	mock.Mock
 }
 
-// CalculateSize provides a mock function with given fields: mn, resourceCount, value
-func (_m *MockPolicy) CalculateSize(mn MetricNotifier, resourceCount int, value float64) int {
-	ret := _m.Called(mn, resourceCount, value)
+// CalculateSize provides a mock function with given fields: resourceCount, value
+func (_m *MockPolicy) CalculateSize(resourceCount int, value float64) int {
+	ret := _m.Called(resourceCount, value)
 
 	var r0 int
-	if rf, ok := ret.Get(0).(func(MetricNotifier, int, float64) int); ok {
-		r0 = rf(mn, resourceCount, value)
+	if rf, ok := ret.Get(0).(func(int, float64) int); ok {
+		r0 = rf(resourceCount, value)
 	} else {
 		r0 = ret.Get(0).(int)
 	}

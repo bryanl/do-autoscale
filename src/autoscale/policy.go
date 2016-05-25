@@ -26,6 +26,7 @@ type Policy interface {
 
 type valuePolicyData struct {
 	MinSize        int     `json:"min_size"`
+	MaxSize        int     `json:"max_size"`
 	ScaleUpValue   float64 `json:"scale_up_value"`
 	ScaleUpBy      int     `json:"scale_up_by"`
 	ScaleDownValue float64 `json:"scale_down_value"`
@@ -80,6 +81,10 @@ func ValuePolicyFromJSON(in json.RawMessage) ValuePolicyOption {
 			vpd = defaultValuePolicy
 		}
 
+		if vpd.MaxSize < vpd.MinSize {
+			return fmt.Errorf("maxSize (%d) must be greater or equal to minSize(%d)", vpd.MaxSize, vpd.MinSize)
+		}
+
 		if vpd.ScaleDownValue >= vpd.ScaleUpValue {
 			return fmt.Errorf("scaleUpValue (%f) must be more than scaleDownValue (%f)",
 				vpd.ScaleUpValue, vpd.ScaleDownValue)
@@ -128,6 +133,10 @@ func (p *ValuePolicy) CalculateSize(resourceCount int, value float64) int {
 
 	if newCount <= p.vpd.MinSize {
 		return p.vpd.MinSize
+	}
+
+	if newCount > p.vpd.MaxSize {
+		return p.vpd.MaxSize
 	}
 
 	return newCount

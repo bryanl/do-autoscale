@@ -18,10 +18,12 @@ func TestValuePolicy(t *testing.T) {
 		{resourceCount: 5, value: 0.1, expected: 3},
 		{resourceCount: 5, value: 0.8, expected: 8},
 		{resourceCount: 1, value: 0.1, expected: 1},
+		{resourceCount: 9, value: 0.8, expected: 10},
 	}
 
 	jsonMessage := []byte(`{
     "min_size": 1,
+    "max_size": 10,
     "scale_up_value": 0.8,
     "scale_up_by": 3,
     "scale_down_value": 0.2,
