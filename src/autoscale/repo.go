@@ -29,6 +29,8 @@ type Repository interface {
 	ListGroups(ctx context.Context) ([]Group, error)
 	DeleteGroup(ctx context.Context, name string) error
 	SaveGroup(ctx context.Context, group Group) error
+
+	Close() error
 }
 
 type pgRepo struct {
@@ -260,6 +262,10 @@ func (r *pgRepo) DeleteGroup(ctx context.Context, name string) error {
 	}
 
 	return tx.Commit()
+}
+
+func (r *pgRepo) Close() error {
+	return r.db.Close()
 }
 
 var (

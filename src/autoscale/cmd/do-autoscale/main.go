@@ -7,11 +7,11 @@ import (
 	"golang.org/x/net/context"
 
 	"math/rand"
-	"net/http"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/kelseyhightower/envconfig"
+	"gopkg.in/tylerb/graceful.v1"
 )
 
 // Specification describes our expected environment.
@@ -33,16 +33,17 @@ type Specification struct {
 }
 
 func main() {
-	log := logrus.New()
+	logger := logrus.New()
 	rand.Seed(time.Now().UnixNano())
 
 	var s Specification
 	err := envconfig.Process("autoscale", &s)
 	if err != nil {
-		log.WithError(err).Fatal("unable to read environment")
+		logger.WithError(err).Fatal("unable to read environment")
 	}
 
-	ctx := context.WithValue(context.Background(), "log", log.WithField("env", s.Env))
+	log := logger.WithField("env", s.Env)
+	ctx := context.WithValue(context.Background(), "log", log)
 
 	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
 
@@ -71,31 +72,62 @@ func main() {
 		return s.AccessToken
 	}
 
+	repo, err := initRepository(s, log)
+	if err != nil {
+		log.WithError(err).Fatal("unable to initialize repository")
+	}
+
+	watcher, err := initWatcher(ctx, repo, log)
+	if err != nil {
+		log.WithError(err).Fatal("unable to initialize watcher")
+	}
+
+	a := api.New(ctx, repo)
+
+	log.WithFields(logrus.Fields{
+		"http-addr": s.HTTPAddr,
+	}).Info("starting http server")
+
+	if err := graceful.RunWithErr(s.HTTPAddr, 5*time.Second, a.Mux); err != nil {
+		log.WithError(err).Error("http server did not exit successfully")
+	}
+
+	log.Info("shutting down")
+	watcher.Stop()
+	if err := repo.Close(); err != nil {
+		log.WithError(err).Error("repository did not close successfully")
+	}
+
+}
+
+func initRepository(s Specification, log *logrus.Entry) (autoscale.Repository, error) {
 	db, err := autoscale.NewDB(s.DBUser, s.DBPassword, s.DBAddr, s.DBName)
 	if err != nil {
-		log.WithError(err).Fatal("unable to create database connection")
+		log.WithError(err).Error("unable to create database connection")
+		return nil, err
 	}
 
 	repo, err := autoscale.NewRepository(db)
 	if err != nil {
-		log.WithError(err).Fatal("unable to setup data repository")
+		log.WithError(err).Error("unable to setup data repository")
+		return nil, err
 	}
 
+	return repo, nil
+}
+
+func initWatcher(ctx context.Context, repo autoscale.Repository, log *logrus.Entry) (*autoscale.Watcher, error) {
 	watcher, err := autoscale.NewWatcher(ctx, repo)
 	if err != nil {
-		log.WithError(err).Fatal("unable to setup watcher")
+		log.WithError(err).Error("unable to setup watcher")
+		return nil, err
 	}
-	go func() {
-		if _, err := watcher.Watch(ctx); err != nil {
-			log.WithError(err).Fatal("unable to start watcher")
-		}
-	}()
 
-	a := api.New(ctx, repo)
-	http.Handle("/", a.Mux)
+	_, err = watcher.Watch()
+	if err != nil {
+		log.WithError(err).Error("unable to start watcher")
+		return nil, err
+	}
 
-	log.WithFields(logrus.Fields{
-		"http-addr": s.HTTPAddr,
-	}).Info("created http server")
-	log.Fatal(http.ListenAndServe(s.HTTPAddr, nil))
+	return watcher, nil
 }

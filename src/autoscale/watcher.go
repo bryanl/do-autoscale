@@ -71,7 +71,7 @@ func (w *Watcher) Groups() []string {
 }
 
 // Watch starts the watching process.
-func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
+func (w *Watcher) Watch() (chan bool, error) {
 	w.wg.Lock()
 	defer w.wg.Unlock()
 
@@ -107,7 +107,7 @@ func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 					continue
 				}
 
-				g, err := w.repo.GetGroup(ctx, job.name)
+				g, err := w.repo.GetGroup(w.ctx, job.name)
 				if err != nil {
 					if err != ObjectMissingErr {
 						log.WithError(err).Error("retrieve group")
@@ -115,7 +115,7 @@ func (w *Watcher) Watch(ctx context.Context) (chan bool, error) {
 					continue
 				}
 
-				go w.queueCheck(ctx, g)
+				go w.queueCheck(w.ctx, g)
 
 			case <-w.quitChan:
 				log.Info("watcher is shutting down")

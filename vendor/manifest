@@ -27,6 +27,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/codegangsta/negroni",
+			"repository": "https://github.com/codegangsta/negroni",
+			"revision": "ffbc66b612ee3eac2eba29aedce4c3a65e4dd0a1",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/davecgh/go-spew/spew",
 			"repository": "https://github.com/davecgh/go-spew",
 			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
@@ -245,6 +251,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/tylerb/graceful",
+			"repository": "https://github.com/tylerb/graceful",
+			"revision": "9a3d4236b03bb5d26f7951134d248f9d5510d599",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/valyala/fasthttp",
 			"repository": "https://github.com/valyala/fasthttp",
 			"revision": "fa50251b469f06a5fc6eb39da70a1e3427ae0991",
@@ -269,6 +281,13 @@
 			"revision": "0c607074acd38c5f23d1344dfe74c977464d1257",
 			"branch": "master",
 			"path": "/dict"
+		},
+		{
+			"importpath": "golang.org/x/net/netutil",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "0c607074acd38c5f23d1344dfe74c977464d1257",
+			"branch": "master",
+			"path": "/netutil"
 		},
 		{
 			"importpath": "golang.org/x/oauth2",
@@ -306,6 +325,12 @@
 			"importpath": "gopkg.in/gemnasium/logrus-airbrake-hook.v2",
 			"repository": "https://gopkg.in/gemnasium/logrus-airbrake-hook.v2",
 			"revision": "31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/tylerb/graceful.v1",
+			"repository": "https://gopkg.in/tylerb/graceful.v1",
+			"revision": "9a3d4236b03bb5d26f7951134d248f9d5510d599",
 			"branch": "master"
 		}
 	]
