@@ -1,3 +1,29 @@
-<h2 id="title">Welcome to Autoscaler</h2>
+<div class="navbar navbar-inverse">
+  <div class="container">
+    <div class="navbar-header">
+      {{#link-to "index" class="navbar-brand"}}
+        DO Auto Scale
+      {{/link-to}}
+    </div>
+    <div id="navbar" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li>
+          {{#link-to "templates"}}
+            Templates
+          {{/link-to}}
+        </li>
 
-{{outlet}}
+        <li><a href="#">Groups</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="dashboard-content">
+    {{outlet}}
+  </div>
+</div>
+
+
+
