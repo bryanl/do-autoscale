@@ -1,6 +1,7 @@
 package api
 
 import (
+	"autoscale/gen"
 	"encoding/json"
 	"net/http"
 	"pkg/ctxutil"
@@ -10,6 +11,7 @@ import (
 
 	"autoscale"
 
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
@@ -85,6 +87,35 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	e.POST("/groups", a.createGroup)
 	e.DELETE("/groups/:id", a.deleteGroup)
 	e.PUT("/groups/:id", a.updateGroup)
+
+	e.Get("/", func(c echo.Context) error {
+		w := c.Response().(*standard.Response).ResponseWriter
+		r := c.Request().(*standard.Request).Request
+
+		http.FileServer(
+			&assetfs.AssetFS{
+				Asset:     gen.Asset,
+				AssetDir:  gen.AssetDir,
+				AssetInfo: gen.AssetInfo,
+				Prefix:    "dashboard/dist"}).
+			ServeHTTP(w, r)
+		return nil
+	})
+
+	e.Get("/assets/*", func(c echo.Context) error {
+		w := c.Response().(*standard.Response).ResponseWriter
+		r := c.Request().(*standard.Request).Request
+
+		http.StripPrefix(
+			"/assets/",
+			http.FileServer(&assetfs.AssetFS{
+				Asset:     gen.Asset,
+				AssetDir:  gen.AssetDir,
+				AssetInfo: gen.AssetInfo,
+				Prefix:    "dashboard/dist/assets"})).
+			ServeHTTP(w, r)
+		return nil
+	})
 
 	return a
 }

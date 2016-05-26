@@ -52,6 +52,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/elazarl/go-bindata-assetfs",
+			"repository": "https://github.com/elazarl/go-bindata-assetfs",
+			"revision": "57eb5e1fc594ad4b0b1dbea7b286d299e0cb43c2",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/fatih/color",
 			"repository": "https://github.com/fatih/color",
 			"revision": "533cd7fd8a85905f67a1753afb4deddc85ea174f",
