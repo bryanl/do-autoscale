@@ -33,19 +33,9 @@ type Specification struct {
 }
 
 func main() {
-	logger := logrus.New()
 	rand.Seed(time.Now().UnixNano())
 
-	var s Specification
-	err := envconfig.Process("autoscale", &s)
-	if err != nil {
-		logger.WithError(err).Fatal("unable to read environment")
-	}
-
-	log := logger.WithField("env", s.Env)
-	ctx := context.WithValue(context.Background(), "log", log)
-
-	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
+	ctx, s, log := initContext()
 
 	if s.RegisterDefaultMetrics {
 		ctx = context.WithValue(ctx, autoscale.PrometheusConfigDirContextKey, s.PrometheusConfigDir)
@@ -72,7 +62,7 @@ func main() {
 		return s.AccessToken
 	}
 
-	repo, err := initRepository(s, log)
+	repo, err := initRepository(ctx, s, log)
 	if err != nil {
 		log.WithError(err).Fatal("unable to initialize repository")
 	}
@@ -97,11 +87,26 @@ func main() {
 	if err := repo.Close(); err != nil {
 		log.WithError(err).Error("repository did not close successfully")
 	}
-
 }
 
-func initRepository(s Specification, log *logrus.Entry) (autoscale.Repository, error) {
-	db, err := autoscale.NewDB(s.DBUser, s.DBPassword, s.DBAddr, s.DBName)
+func initContext() (context.Context, Specification, *logrus.Entry) {
+	logger := logrus.New()
+	var s Specification
+	err := envconfig.Process("autoscale", &s)
+	if err != nil {
+		logger.WithError(err).Fatal("unable to read environment")
+	}
+
+	log := logger.WithField("env", s.Env)
+	ctx := context.WithValue(context.Background(), "log", log)
+	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
+	ctx = context.WithValue(ctx, "env", s.Env)
+
+	return ctx, s, log
+}
+
+func initRepository(ctx context.Context, s Specification, log *logrus.Entry) (autoscale.Repository, error) {
+	db, err := autoscale.NewDB(ctx, s.DBUser, s.DBPassword, s.DBAddr, s.DBName)
 	if err != nil {
 		log.WithError(err).Error("unable to create database connection")
 		return nil, err

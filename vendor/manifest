@@ -52,9 +52,27 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/fatih/color",
+			"repository": "https://github.com/fatih/color",
+			"revision": "533cd7fd8a85905f67a1753afb4deddc85ea174f",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/go-errors/errors",
 			"repository": "https://github.com/go-errors/errors",
 			"revision": "a41850380601eeb43f4350f7d17c6bbd8944aaf8",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/go-sql-driver/mysql",
+			"repository": "https://github.com/go-sql-driver/mysql",
+			"revision": "7ebe0a500653eeb1859664bed5e48dec1e164e73",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/gocql/gocql",
+			"repository": "https://github.com/gocql/gocql",
+			"revision": "b7b8a0e04b0cb0ca0b379421c58ec6fab9939b85",
 			"branch": "master"
 		},
 		{
@@ -63,6 +81,12 @@
 			"revision": "7cc19b78d562895b13596ddce7aafb59dd789318",
 			"branch": "master",
 			"path": "/proto"
+		},
+		{
+			"importpath": "github.com/golang/snappy",
+			"repository": "https://github.com/golang/snappy",
+			"revision": "d6668316e43571d7dde95be6fd077f96de002f8b",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/google/go-querystring/query",
@@ -84,9 +108,21 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/hailocab/go-hostpool",
+			"repository": "https://github.com/hailocab/go-hostpool",
+			"revision": "e80d13ce29ede4452c43dea11e79b9bc8a15b478",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/jmoiron/sqlx",
 			"repository": "https://github.com/jmoiron/sqlx",
 			"revision": "398dd5876282499cdfd4cb8ea0f31a672abe9495",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/jteeuwen/go-bindata",
+			"repository": "https://github.com/jteeuwen/go-bindata",
+			"revision": "a0ff2567cfb70903282db057e799fd826784d41d",
 			"branch": "master"
 		},
 		{
@@ -168,6 +204,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/mattes/migrate",
+			"repository": "https://github.com/mattes/migrate",
+			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/mattn/go-colorable",
 			"repository": "https://github.com/mattn/go-colorable",
 			"revision": "e8a10ddc7d2a7fe255f6fd7f501070a4cb62c183",
@@ -177,6 +219,12 @@
 			"importpath": "github.com/mattn/go-isatty",
 			"repository": "https://github.com/mattn/go-isatty",
 			"revision": "56b76bdf51f7708750eac80fa38b952bb9f32639",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mattn/go-sqlite3",
+			"repository": "https://github.com/mattn/go-sqlite3",
+			"revision": "38ee283dabf11c9cbdb968eebd79b1fa7acbabe6",
 			"branch": "master"
 		},
 		{
@@ -325,6 +373,12 @@
 			"importpath": "gopkg.in/gemnasium/logrus-airbrake-hook.v2",
 			"repository": "https://gopkg.in/gemnasium/logrus-airbrake-hook.v2",
 			"revision": "31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/inf.v0",
+			"repository": "https://gopkg.in/inf.v0",
+			"revision": "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4",
 			"branch": "master"
 		},
 		{
