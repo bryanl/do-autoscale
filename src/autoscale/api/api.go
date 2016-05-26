@@ -88,7 +88,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	e.DELETE("/groups/:id", a.deleteGroup)
 	e.PUT("/groups/:id", a.updateGroup)
 
-	e.Get("/", func(c echo.Context) error {
+	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
 		r := c.Request().(*standard.Request).Request
 
@@ -97,7 +97,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 				Asset:     gen.Asset,
 				AssetDir:  gen.AssetDir,
 				AssetInfo: gen.AssetInfo,
-				Prefix:    "dashboard/dist"}).
+				Prefix:    "static"}).
 			ServeHTTP(w, r)
 		return nil
 	})
@@ -112,7 +112,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 				Asset:     gen.Asset,
 				AssetDir:  gen.AssetDir,
 				AssetInfo: gen.AssetInfo,
-				Prefix:    "dashboard/dist/assets"})).
+				Prefix:    "static/assets"})).
 			ServeHTTP(w, r)
 		return nil
 	})
