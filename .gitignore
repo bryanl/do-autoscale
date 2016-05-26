@@ -1,12 +1,15 @@
-.vscode
-bin
+/.vscode
+/bin
 /pkg
-vendor/pkg
-dev.env
+/vendor/pkg
+/dev.env
 
-config/prom-configs/*
-!config/prom-configs/.gitkeep
-src/autoscale/db/postgres
-db/postgres
-src/autoscale/static/
-src/autoscale/gen/gen.go
+/config/prom-configs/*
+!/config/prom-configs/.gitkeep
+/src/autoscale/db/postgres
+/db/postgres
+/src/autoscale/static/
+/src/autoscale/gen/gen.go
+
+/src/autoscale/dashboard/node_modules
+/src/autoscale/dashboard/bower_components
