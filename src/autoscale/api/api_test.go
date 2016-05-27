@@ -42,7 +42,7 @@ func TestListTemplates(t *testing.T) {
 
 		repo.On("ListTemplates", ctx).Return(ogTmpls, nil)
 
-		u.Path = "/templates"
+		u.Path = "/api/templates"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -50,11 +50,11 @@ func TestListTemplates(t *testing.T) {
 
 		require.Equal(t, 200, res.StatusCode)
 
-		var tmpls []autoscale.Template
-		err = json.NewDecoder(res.Body).Decode(&tmpls)
+		var resp autoscale.TemplatesResponse
+		err = json.NewDecoder(res.Body).Decode(&resp)
 		require.NoError(t, err)
 
-		require.Len(t, tmpls, 2)
+		require.Len(t, resp.Templates, 2)
 	})
 }
 
@@ -62,7 +62,7 @@ func TestDeleteTemplate(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
 		repo.On("DeleteTemplate", ctx, "1").Return(nil)
 
-		u.Path = "/templates/1"
+		u.Path = "/api/templates/1"
 
 		req, err := http.NewRequest("DELETE", u.String(), nil)
 		require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestGetTemplate(t *testing.T) {
 
 		repo.On("GetTemplate", ctx, "1").Return(ogTmpl, nil)
 
-		u.Path = "/templates/1"
+		u.Path = "/api/templates/1"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestGetMissingTemplate(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
 		repo.On("GetTemplate", ctx, "1").Return(autoscale.Template{}, errors.New("boom"))
 
-		u.Path = "/templates/1"
+		u.Path = "/api/templates/1"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -116,12 +116,14 @@ func TestCreateTemplate(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
 
 		ctr := autoscale.CreateTemplateRequest{
-			Name:     "a-template",
-			Region:   "dev0",
-			Size:     "512mb",
-			Image:    "ubuntu-14-04-x64",
-			SSHKeys:  []string{"123", "456", "789"},
-			UserData: "#userdata",
+			Options: autoscale.TemplateOptions{
+				Name:     "a-template",
+				Region:   "dev0",
+				Size:     "512mb",
+				Image:    "ubuntu-14-04-x64",
+				SSHKeys:  []string{"123", "456", "789"},
+				UserData: "#userdata",
+			},
 		}
 
 		tmpl := autoscale.Template{
@@ -136,15 +138,17 @@ func TestCreateTemplate(t *testing.T) {
 
 		repo.On("CreateTemplate", ctx, ctr).Return(tmpl, nil)
 
-		u.Path = "/templates"
+		u.Path = "/api/templates"
 
 		req := []byte(`{
-    "name": "a-template",
-    "region": "dev0",
-    "size": "512mb",
-    "image": "ubuntu-14-04-x64",
-    "ssh_keys": ["123", "456", "789"],
-    "user_data": "#userdata"
+    "template":{
+      "name": "a-template",
+      "region": "dev0",
+      "size": "512mb",
+      "image": "ubuntu-14-04-x64",
+      "ssh_keys": ["123", "456", "789"],
+      "user_data": "#userdata"
+    }
   }`)
 
 		var buf bytes.Buffer
@@ -175,7 +179,7 @@ func TestListGroups(t *testing.T) {
 
 		repo.On("ListGroups", ctx).Return(ogGroups, nil)
 
-		u.Path = "/groups"
+		u.Path = "/api/groups"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -190,7 +194,7 @@ func TestDeleteGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
 		repo.On("DeleteGroup", ctx, "abc").Return(nil)
 
-		u.Path = "/groups/abc"
+		u.Path = "/api/groups/abc"
 
 		req, err := http.NewRequest("DELETE", u.String(), nil)
 		require.NoError(t, err)
@@ -211,7 +215,7 @@ func TestUpdateGroup(t *testing.T) {
 		repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
 		repo.On("SaveGroup", ctx, ogGroupUpdated).Return(nil)
 
-		u.Path = "/groups/abc"
+		u.Path = "/api/groups/abc"
 
 		j := `{
     "base_size": 6
@@ -237,7 +241,7 @@ func TestGetGroup(t *testing.T) {
 
 		repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
 
-		u.Path = "/groups/abc"
+		u.Path = "/api/groups/abc"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -255,9 +259,9 @@ func TestGetGroup(t *testing.T) {
 
 func TestGetMissingGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		repo.On("GetGroup", ctx, "1").Return(autoscale.Group{}, errors.New("boom"))
+		repo.On("GetGroup", ctx, "1").Return(autoscale.Group{}, errors.New("missing"))
 
-		u.Path = "/groups/1"
+		u.Path = "/api/groups/1"
 
 		res, err := http.Get(u.String())
 		require.NoError(t, err)
@@ -290,7 +294,7 @@ func TestCreateGroup(t *testing.T) {
 
 		repo.On("CreateGroup", ctx, cgr).Return(group, nil)
 
-		u.Path = "/groups"
+		u.Path = "/api/groups"
 
 		req := []byte(`{
     "name": "group",

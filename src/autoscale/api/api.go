@@ -78,16 +78,18 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		StackSize: 1 << 10, // 1 KB
 	}))
 
-	e.GET("/templates/:id", a.getTemplate)
-	e.GET("/templates", a.listTemplates)
-	e.POST("/templates", a.createTemplate)
-	e.DELETE("/templates/:id", a.deleteTemplate)
-	e.GET("/groups", a.listGroups)
-	e.GET("/groups/:id", a.getGroup)
-	e.POST("/groups", a.createGroup)
-	e.DELETE("/groups/:id", a.deleteGroup)
-	e.PUT("/groups/:id", a.updateGroup)
-	e.Get("/user-config", a.userConfig)
+	g := e.Group("/api")
+
+	g.Get("/templates/:id", a.GetTemplate)
+	g.Get("/templates", a.listTemplates)
+	g.Post("/templates", a.createTemplate)
+	g.Delete("/templates/:id", a.DeleteTemplate)
+	g.Get("/groups", a.listGroups)
+	g.Get("/groups/:id", a.GetGroup)
+	g.Post("/groups", a.createGroup)
+	g.Delete("/groups/:id", a.deleteGroup)
+	g.Put("/groups/:id", a.updateGroup)
+	g.Get("/user_config", a.userConfig)
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -130,10 +132,14 @@ func (a *API) listTemplates(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, tmpls)
+	r := autoscale.TemplatesResponse{
+		Templates: tmpls,
+	}
+
+	return c.JSON(http.StatusOK, r)
 }
 
-func (a *API) getTemplate(c echo.Context) error {
+func (a *API) GetTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
@@ -157,7 +163,7 @@ func (a *API) createTemplate(c echo.Context) error {
 
 	tmpl, err := a.repo.CreateTemplate(a.ctx, ctr)
 	if err != nil {
-		log.WithError(err).Error("delete template")
+		log.WithError(err).Error("Delete template")
 
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
@@ -165,14 +171,14 @@ func (a *API) createTemplate(c echo.Context) error {
 	return c.JSON(http.StatusCreated, tmpl)
 }
 
-func (a *API) deleteTemplate(c echo.Context) error {
+func (a *API) DeleteTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
 	err := a.repo.DeleteTemplate(a.ctx, id)
 	if err != nil {
-		log.WithError(err).Error("delete template")
+		log.WithError(err).Error("Delete template")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
@@ -191,14 +197,14 @@ func (a *API) listGroups(c echo.Context) error {
 	return c.JSON(http.StatusOK, groups)
 }
 
-func (a *API) getGroup(c echo.Context) error {
+func (a *API) GetGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
 
 	group, err := a.repo.GetGroup(a.ctx, id)
 	if err != nil {
-		log.WithError(err).Error("get group")
+		log.WithError(err).Error("Get group")
 		return echo.ErrNotFound
 	}
 
@@ -229,7 +235,7 @@ func (a *API) deleteGroup(c echo.Context) error {
 
 	err := a.repo.DeleteGroup(a.ctx, id)
 	if err != nil {
-		log.WithError(err).Error("delete group")
+		log.WithError(err).Error("Delete group")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
@@ -265,11 +271,16 @@ func (a *API) updateGroup(c echo.Context) error {
 func (a *API) userConfig(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
-	uc, err := autoscale.NewUserConfig()
+	client := autoscale.DOClientFactory()
+	uc, err := autoscale.NewUserConfig(c, client)
 	if err != nil {
 		log.WithError(err).Error("retrieve user config")
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, uc)
+	ucr := autoscale.UserConfigResponse{
+		UserConfig: uc,
+	}
+
+	return c.JSON(http.StatusOK, ucr)
 }
