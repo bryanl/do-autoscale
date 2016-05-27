@@ -388,6 +388,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "gopkg.in/tomb.v2",
+			"repository": "https://gopkg.in/tomb.v2",
+			"revision": "14b3d72120e8d10ea6e6b7f87f7175734b1faab8",
+			"branch": "v2"
+		},
+		{
 			"importpath": "gopkg.in/tylerb/graceful.v1",
 			"repository": "https://gopkg.in/tylerb/graceful.v1",
 			"revision": "9a3d4236b03bb5d26f7951134d248f9d5510d599",

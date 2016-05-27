@@ -87,6 +87,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	e.POST("/groups", a.createGroup)
 	e.DELETE("/groups/:id", a.deleteGroup)
 	e.PUT("/groups/:id", a.updateGroup)
+	e.Get("/user-config", a.userConfig)
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -259,4 +260,16 @@ func (a *API) updateGroup(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, g)
+}
+
+func (a *API) userConfig(c echo.Context) error {
+	log := ctxutil.LogFromContext(c)
+
+	uc, err := autoscale.NewUserConfig()
+	if err != nil {
+		log.WithError(err).Error("retrieve user config")
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	return c.JSON(http.StatusOK, uc)
 }

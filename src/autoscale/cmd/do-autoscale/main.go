@@ -101,6 +101,7 @@ func initContext() (context.Context, Specification, *logrus.Entry) {
 	ctx := context.WithValue(context.Background(), "log", log)
 	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
 	ctx = context.WithValue(ctx, "env", s.Env)
+	ctx = context.WithValue(ctx, "doToken", s.AccessToken)
 
 	return ctx, s, log
 }

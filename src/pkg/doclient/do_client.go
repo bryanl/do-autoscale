@@ -11,6 +11,9 @@ import (
 type Client struct {
 	TagsService     do.TagsService
 	DropletsService do.DropletsService
+	SizesService    do.SizesService
+	RegionsService  do.RegionsService
+	KeysService     do.KeysService
 }
 
 type tokenSource struct {
@@ -37,6 +40,9 @@ func New(pat string) *Client {
 	dc := &Client{
 		DropletsService: do.NewDropletsService(godoClient),
 		TagsService:     do.NewTagsService(godoClient),
+		SizesService:    do.NewSizesService(godoClient),
+		RegionsService:  do.NewRegionsService(godoClient),
+		KeysService:     do.NewKeysService(godoClient),
 	}
 
 	return dc
