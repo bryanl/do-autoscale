@@ -14,6 +14,7 @@ type Client struct {
 	SizesService    do.SizesService
 	RegionsService  do.RegionsService
 	KeysService     do.KeysService
+	AccountsService do.AccountService
 }
 
 type tokenSource struct {
@@ -28,6 +29,7 @@ func (t *tokenSource) Token() (*oauth2.Token, error) {
 	return token, nil
 }
 
+// New creates an instance of Client.
 func New(pat string) *Client {
 	ts := &tokenSource{
 		AccessToken: pat,
@@ -43,6 +45,7 @@ func New(pat string) *Client {
 		SizesService:    do.NewSizesService(godoClient),
 		RegionsService:  do.NewRegionsService(godoClient),
 		KeysService:     do.NewKeysService(godoClient),
+		AccountsService: do.NewAccountService(godoClient),
 	}
 
 	return dc

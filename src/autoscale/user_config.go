@@ -1,45 +1,68 @@
 package autoscale
 
 import (
+	"pkg/ctxutil"
 	"pkg/do"
 	"pkg/doclient"
+	"sync"
 
-	"gopkg.in/tomb.v2"
+	"github.com/Sirupsen/logrus"
+
+	"golang.org/x/net/context"
 )
+
+// UserConfigResponse is a response suitable for returning in a REST API.
+type UserConfigResponse struct {
+	UserConfig *UserConfig `json:"user_config"`
+}
 
 // UserConfig is the DO configuration for a user.
 type UserConfig struct {
+	ID      string     `json:"id"`
 	Regions do.Regions `json:"regions"`
 	Sizes   do.Sizes   `json:"sizes"`
 	Keys    do.SSHKeys `json:"keys"`
 }
 
 // NewUserConfig creates an instance of UserConfig.
-func NewUserConfig() (*UserConfig, error) {
-	dc := doclient.New(DOAccessToken())
+func NewUserConfig(ctx context.Context, dc *doclient.Client) (*UserConfig, error) {
+	log := ctxutil.LogFromContext(ctx).WithField("action", "user-config")
 	uc := &UserConfig{}
+	errs := []error{}
 
-	t := tomb.Tomb{}
-	t.Go(func() error {
-		return getRegions(dc, uc)
-	})
+	wg := sync.WaitGroup{}
+	wg.Add(4)
 
-	t.Go(func() error {
-		return getSizes(dc, uc)
-	})
+	go func() {
+		defer wg.Done()
+		getRegions(log, dc, uc)
+	}()
 
-	t.Go(func() error {
-		return getKeys(dc, uc)
-	})
+	go func() {
+		defer wg.Done()
+		getSizes(log, dc, uc)
+	}()
 
-	if err := t.Wait(); err != nil {
-		return nil, err
+	go func() {
+		defer wg.Done()
+		getKeys(log, dc, uc)
+	}()
+
+	go func() {
+		defer wg.Done()
+		getID(log, dc, uc)
+	}()
+
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
 	}
 
 	return uc, nil
 }
 
-func getRegions(dc *doclient.Client, uc *UserConfig) error {
+func getRegions(log *logrus.Entry, dc *doclient.Client, uc *UserConfig) error {
 	regions, err := dc.RegionsService.List()
 	if err != nil {
 		return err
@@ -49,7 +72,7 @@ func getRegions(dc *doclient.Client, uc *UserConfig) error {
 	return nil
 }
 
-func getSizes(dc *doclient.Client, uc *UserConfig) error {
+func getSizes(log *logrus.Entry, dc *doclient.Client, uc *UserConfig) error {
 	sizes, err := dc.SizesService.List()
 	if err != nil {
 		return err
@@ -59,12 +82,22 @@ func getSizes(dc *doclient.Client, uc *UserConfig) error {
 	return nil
 }
 
-func getKeys(dc *doclient.Client, uc *UserConfig) error {
+func getKeys(log *logrus.Entry, dc *doclient.Client, uc *UserConfig) error {
 	keys, err := dc.KeysService.List()
 	if err != nil {
 		return err
 	}
 
 	uc.Keys = keys
+	return nil
+}
+
+func getID(log *logrus.Entry, dc *doclient.Client, uc *UserConfig) error {
+	a, err := dc.AccountsService.Get()
+	if err != nil {
+		return err
+	}
+
+	uc.ID = a.UUID
 	return nil
 }
