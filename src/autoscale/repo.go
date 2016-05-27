@@ -48,13 +48,16 @@ func NewRepository(db *sql.DB) (Repository, error) {
 }
 
 func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error) {
+
+	options := tcr.Options
+
 	t := Template{
-		Name:     tcr.Name,
-		Region:   tcr.Region,
-		Size:     tcr.Size,
-		Image:    tcr.Image,
-		SSHKeys:  tcr.SSHKeys,
-		UserData: tcr.UserData,
+		Name:     options.Name,
+		Region:   options.Region,
+		Size:     options.Size,
+		Image:    options.Image,
+		SSHKeys:  options.SSHKeys,
+		UserData: options.UserData,
 	}
 
 	if !t.IsValid() {

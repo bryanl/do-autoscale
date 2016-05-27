@@ -83,9 +83,9 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Get("/templates/:id", a.GetTemplate)
 	g.Get("/templates", a.listTemplates)
 	g.Post("/templates", a.createTemplate)
-	g.Delete("/templates/:id", a.DeleteTemplate)
+	g.Delete("/templates/:id", a.deleteTemplate)
 	g.Get("/groups", a.listGroups)
-	g.Get("/groups/:id", a.GetGroup)
+	g.Get("/groups/:id", a.getGroup)
 	g.Post("/groups", a.createGroup)
 	g.Delete("/groups/:id", a.deleteGroup)
 	g.Put("/groups/:id", a.updateGroup)
@@ -171,7 +171,7 @@ func (a *API) createTemplate(c echo.Context) error {
 	return c.JSON(http.StatusCreated, tmpl)
 }
 
-func (a *API) DeleteTemplate(c echo.Context) error {
+func (a *API) deleteTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")
@@ -197,7 +197,7 @@ func (a *API) listGroups(c echo.Context) error {
 	return c.JSON(http.StatusOK, groups)
 }
 
-func (a *API) GetGroup(c echo.Context) error {
+func (a *API) getGroup(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
 	id := c.Param("id")

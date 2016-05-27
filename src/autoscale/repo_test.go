@@ -39,12 +39,14 @@ func TestCreateTemplate(t *testing.T) {
 		mock.ExpectCommit()
 
 		ctr := CreateTemplateRequest{
-			Name:     "a-template",
-			Region:   "dev0",
-			Size:     "512mb",
-			Image:    "ubuntu-14-04-x64",
-			SSHKeys:  []string{"1", "2"},
-			UserData: "userdata",
+			Options: TemplateOptions{
+				Name:     "a-template",
+				Region:   "dev0",
+				Size:     "512mb",
+				Image:    "ubuntu-14-04-x64",
+				SSHKeys:  []string{"1", "2"},
+				UserData: "userdata",
+			},
 		}
 
 		expected := Template{
@@ -68,12 +70,14 @@ func TestCreateTemplate(t *testing.T) {
 func TestCreateTemplate_InvalidName(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		ctr := CreateTemplateRequest{
-			Name:     "!!!",
-			Region:   "dev0",
-			Size:     "512mb",
-			Image:    "ubuntu-14-04-x64",
-			SSHKeys:  []string{"1", "2"},
-			UserData: "userdata",
+			Options: TemplateOptions{
+				Name:     "!!!",
+				Region:   "dev0",
+				Size:     "512mb",
+				Image:    "ubuntu-14-04-x64",
+				SSHKeys:  []string{"1", "2"},
+				UserData: "userdata",
+			},
 		}
 
 		_, err := repo.CreateTemplate(ctx, ctr)
@@ -89,7 +93,7 @@ func TestGetTemplate(t *testing.T) {
 		mock.ExpectQuery("SELECT (.+) from templates (.+)").
 			WithArgs("a-template").
 			WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata"))
+				AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata"))
 
 		ogTmpl := Template{
 			ID:       "1",
@@ -113,8 +117,8 @@ func TestListTemplates(t *testing.T) {
 
 		mock.ExpectQuery("SELECT (.+) from templates").
 			WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("1", "template-1", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata").
-			AddRow("2", "template-2", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("3,4"), "userdata"))
+				AddRow("1", "template-1", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata").
+				AddRow("2", "template-2", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("3,4"), "userdata"))
 
 		tmpls, err := repo.ListTemplates(ctx)
 		require.NoError(t, err)
@@ -217,7 +221,7 @@ func TestGetGroup(t *testing.T) {
 		mock.ExpectQuery("SELECT (.+) from groups (.+)").
 			WithArgs("as").
 			WillReturnRows(sqlmock.NewRows(groupColumns).
-			AddRow("abc", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
+				AddRow("abc", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
 		group, err := repo.GetGroup(ctx, "as")
 		require.NoError(t, err)
@@ -241,8 +245,8 @@ func TestListGroups(t *testing.T) {
 
 		mock.ExpectQuery("SELECT (.+) from groups").
 			WillReturnRows(sqlmock.NewRows(groupColumns).
-			AddRow("abc", "group1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)).
-			AddRow("def", "group2", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
+				AddRow("abc", "group1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)).
+				AddRow("def", "group2", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
 		groups, err := repo.ListGroups(ctx)
 		require.NoError(t, err)

@@ -21,7 +21,7 @@ var (
 
 	// ResourceManagerFactory creates a ResourceManager given a group.
 	ResourceManagerFactory ResourceManagerFactoryFn = func(g *Group) (ResourceManager, error) {
-		doClient := doclient.New(DOAccessToken())
+		doClient := DOClientFactory()
 		tag := fmt.Sprintf("do:as:%s", g.Name)
 
 		h := md5.New()
@@ -32,6 +32,10 @@ var (
 
 		log := logrus.WithField("group-name", g.Name)
 		return NewDropletResource(doClient, newTag, log)
+	}
+
+	DOClientFactory = func() *doclient.Client {
+		return doclient.New(DOAccessToken())
 	}
 
 	defaultValuePolicy = valuePolicyData{
@@ -70,6 +74,21 @@ func (s *StringSlice) Scan(src interface{}) error {
 
 // CreateTemplateRequest is a template create request.
 type CreateTemplateRequest struct {
+	Options TemplateOptions `json:"template"`
+}
+
+// TemplateResponse is a template response.
+type TemplateResponse struct {
+	Template Template `json:"template"`
+}
+
+// TemplatesResponse is a response with multiple templates.
+type TemplatesResponse struct {
+	Templates []Template `json:"templates"`
+}
+
+// TemplateOptions are options for a template create request.
+type TemplateOptions struct {
 	Name     string      `json:"name"`
 	Region   string      `json:"region"`
 	Size     string      `json:"size"`
@@ -236,7 +255,7 @@ func (g *Group) LoadMetric(in interface{}) error {
 type Template struct {
 	ID       string      `json:"id" db:"id"`
 	Name     string      `json:"name" db:"name"`
-	Region   string      `json:"string" db:"region"`
+	Region   string      `json:"region" db:"region"`
 	Size     string      `json:"size" db:"size"`
 	Image    string      `json:"image" db:"image"`
 	SSHKeys  StringSlice `json:"ssh_keys" db:"ssh_keys"`
