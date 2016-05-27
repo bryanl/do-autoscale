@@ -1,0 +1,39 @@
+{{#bs-modal title="Create template" body=false footer=false open=show}}
+  {{#bs-modal-body}}
+    {{#bs-form action=(action "submit") model=this}}
+      {{bs-form-element controlType="text" label="name" property="name"}}
+
+      {{bs-form-element controlType="text" label="image" property="image"}}
+
+      {{#bs-form-element label="region" property="region" as |value id|}}
+        {{#x-select value=value class="form-control"}}
+          {{#each userConfig.regions as |item|}}
+            {{#x-option value=item.slug}}{{item.name}}{{/x-option}}
+          {{/each}}
+        {{/x-select}}
+      {{/bs-form-element}}
+
+      {{#bs-form-element label="size" property="size" as |value id|}}
+        {{#x-select value=value class="form-control"}}
+          {{#each userConfig.sizes as |item|}}
+            {{#x-option value=item.slug}}{{item.slug}}{{/x-option}}
+          {{/each}}
+        {{/x-select}}
+      {{/bs-form-element}}
+
+      {{#bs-form-element label="ssh keys" property="sshKeys" as |value id|}}
+        {{select-2
+            id=id
+            multiple=true
+            content=userConfig.keys
+            optionLabelPath="name"
+            value=value
+            searchEnabled=true}}
+      {{/bs-form-element}}
+
+      {{bs-form-element controlType="textarea" label="user data" property="userData"}}
+    {{/bs-form}}
+  {{/bs-modal-body}}
+  {{bs-modal-footer closeTitle="cancel" submitTitle="submit"}}
+{{/bs-modal}}
+

@@ -1,10 +1,22 @@
 <div class="row">
   <div class="col-md-12">
-
-    <ul>
-    {{#each templates as |template|}}
-      <li>{{ template.name }}</li>
-    {{/each}}
-    </ul>
+    {{#bs-button type="primary" action="addTemplate"}}
+    Create Template
+    {{/bs-button}}
   </div>
 </div>
+
+
+{{#each models.templates as |template|}}
+  <div class="row">
+    <div class="col-md-12">
+      {{template-summary template=template}}
+    </div>
+  </div>
+{{/each}}
+
+{{template-create
+    show=showCreateForm
+    userConfig=models.userConfig
+    onCreate=(route-action 'createTemplate') }}
+

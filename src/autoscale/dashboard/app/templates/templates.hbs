@@ -1,1 +1,3 @@
-{{ template-list templates=model }}
+{{template-list
+    models=model
+    onTemplateCreate=(route-action 'createTemplate') }}
