@@ -17,7 +17,11 @@
           <td>{{template.region}}</td>
           <td>{{template.size}}</td>
           <td>{{template.image}}</td>
-          <td></td>
+          <td>
+            {{#each template.sshKeys as |key|}}
+              {{ssh-key-show key=key}}
+            {{/each}}
+            </td>
         </tr>
       </tbody>
     </table>

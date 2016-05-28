@@ -170,8 +170,7 @@ func bootDroplet(dc *dropletConfig) {
 
 	keys := []godo.DropletCreateSSHKey{}
 	for _, k := range dc.template.SSHKeys {
-		str, _ := strconv.Atoi(k)
-		dcs := godo.DropletCreateSSHKey{ID: str}
+		dcs := godo.DropletCreateSSHKey{ID: k.ID}
 		keys = append(keys, dcs)
 	}
 

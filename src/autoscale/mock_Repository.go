@@ -8,12 +8,12 @@ type MockRepository struct {
 	mock.Mock
 }
 
-func (_m *MockRepository) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error) {
-	ret := _m.Called(ctx, tcr)
+func (_m *MockRepository) CreateTemplate(ctx context.Context, t Template) (*Template, error) {
+	ret := _m.Called(ctx, t)
 
 	var r0 *Template
-	if rf, ok := ret.Get(0).(func(context.Context, CreateTemplateRequest) *Template); ok {
-		r0 = rf(ctx, tcr)
+	if rf, ok := ret.Get(0).(func(context.Context, Template) *Template); ok {
+		r0 = rf(ctx, t)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Template)
@@ -21,8 +21,8 @@ func (_m *MockRepository) CreateTemplate(ctx context.Context, tcr CreateTemplate
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, CreateTemplateRequest) error); ok {
-		r1 = rf(ctx, tcr)
+	if rf, ok := ret.Get(1).(func(context.Context, Template) error); ok {
+		r1 = rf(ctx, t)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -4,7 +4,9 @@ export default Ember.Component.extend({
   init() {
     this._super(...arguments);
     console.log("starting up");
-    console.log(this.userConfig);
+    console.log(this.userConfig.get('keys'));
+
+    this.set('sshKeys', this.userConfig.get('keys'));
   },
 
   // should the create form be displayed?

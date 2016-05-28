@@ -6,7 +6,7 @@ CREATE TABLE templates (
   region text,
   size text,
   image text,
-  ssh_keys text,
+  ssh_keys jsonb,
   user_data text
 );
 
