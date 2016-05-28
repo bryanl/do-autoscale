@@ -64,6 +64,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/gedex/inflector",
+			"repository": "https://github.com/gedex/inflector",
+			"revision": "91797f1712fd58f224781be1080b8613d096187e",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/go-errors/errors",
 			"repository": "https://github.com/go-errors/errors",
 			"revision": "a41850380601eeb43f4350f7d17c6bbd8944aaf8",
@@ -129,6 +135,12 @@
 			"importpath": "github.com/jteeuwen/go-bindata",
 			"repository": "https://github.com/jteeuwen/go-bindata",
 			"revision": "a0ff2567cfb70903282db057e799fd826784d41d",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/julienschmidt/httprouter",
+			"repository": "https://github.com/julienschmidt/httprouter",
+			"revision": "77366a47451a56bb3ba682481eed85b64fea14e8",
 			"branch": "master"
 		},
 		{
@@ -207,6 +219,12 @@
 			"importpath": "github.com/lib/pq",
 			"repository": "https://github.com/lib/pq",
 			"revision": "dd3290b2f71a8b30bee8e4e75a337a825263d26f",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/manyminds/api2go",
+			"repository": "https://github.com/manyminds/api2go",
+			"revision": "5207f05d44090999ebf2e09b3e66566484c4dbee",
 			"branch": "master"
 		},
 		{
