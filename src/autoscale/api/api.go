@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
+	"github.com/manyminds/api2go/jsonapi"
 	"github.com/satori/go.uuid"
 )
 
@@ -89,7 +90,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Post("/groups", a.createGroup)
 	g.Delete("/groups/:id", a.deleteGroup)
 	g.Put("/groups/:id", a.updateGroup)
-	g.Get("/user_config", a.userConfig)
+	g.Get("/user-configs", a.userConfig)
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -278,9 +279,10 @@ func (a *API) userConfig(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	ucr := autoscale.UserConfigResponse{
-		UserConfig: uc,
+	j, err := jsonapi.Marshal(uc)
+	if err != nil {
+		log.WithError(err).Error("unable to marshal user config")
 	}
 
-	return c.JSON(http.StatusOK, ucr)
+	return c.JSONBlob(http.StatusOK, j)
 }

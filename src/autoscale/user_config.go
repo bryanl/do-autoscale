@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/manyminds/api2go/jsonapi"
 
 	"golang.org/x/net/context"
 )
@@ -23,6 +24,8 @@ type UserConfig struct {
 	Sizes   do.Sizes   `json:"sizes"`
 	Keys    do.SSHKeys `json:"keys"`
 }
+
+var _ jsonapi.MarshalIdentifier = (*UserConfig)(nil)
 
 // NewUserConfig creates an instance of UserConfig.
 func NewUserConfig(ctx context.Context, dc *doclient.Client) (*UserConfig, error) {
@@ -60,6 +63,11 @@ func NewUserConfig(ctx context.Context, dc *doclient.Client) (*UserConfig, error
 	}
 
 	return uc, nil
+}
+
+// GetID returns the ID for the UserConfig. Uses the DO account's UUID.
+func (uc *UserConfig) GetID() string {
+	return uc.ID
 }
 
 func getRegions(log *logrus.Entry, dc *doclient.Client, uc *UserConfig) error {
