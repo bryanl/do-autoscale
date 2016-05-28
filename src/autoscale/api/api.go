@@ -44,6 +44,9 @@ type API struct {
 func New(ctx context.Context, repo autoscale.Repository) *API {
 	e := echo.New()
 
+	jb := &jsonAPIBinder{}
+	e.SetBinder(jb)
+
 	std := standard.WithConfig(engine.Config{})
 	std.SetHandler(e)
 
@@ -158,19 +161,24 @@ func (a *API) GetTemplate(c echo.Context) error {
 func (a *API) createTemplate(c echo.Context) error {
 	log := ctxutil.LogFromContext(c)
 
-	var ctr autoscale.CreateTemplateRequest
-	if err := c.Bind(&ctr); err != nil {
+	var tmpl autoscale.Template
+	if err := c.Bind(&tmpl); err != nil {
 		return err
 	}
 
-	tmpl, err := a.repo.CreateTemplate(a.ctx, ctr)
+	newTmpl, err := a.repo.CreateTemplate(a.ctx, tmpl)
 	if err != nil {
 		log.WithError(err).Error("Delete template")
 
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	return c.JSON(http.StatusCreated, tmpl)
+	j, err := jsonapi.Marshal(newTmpl)
+	if err != nil {
+		log.WithError(err).Error("unable to marshal user config")
+	}
+
+	return c.JSONBlob(http.StatusOK, j)
 }
 
 func (a *API) deleteTemplate(c echo.Context) error {

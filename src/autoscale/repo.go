@@ -19,7 +19,7 @@ var (
 
 // Repository maps data to an entity models.
 type Repository interface {
-	CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error)
+	CreateTemplate(ctx context.Context, t Template) (*Template, error)
 	GetTemplate(ctx context.Context, name string) (*Template, error)
 	ListTemplates(ctx context.Context) ([]*Template, error)
 	DeleteTemplate(ctx context.Context, name string) error
@@ -47,19 +47,7 @@ func NewRepository(db *sql.DB) (Repository, error) {
 	}, nil
 }
 
-func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error) {
-
-	options := tcr.Options
-
-	t := Template{
-		Name:     options.Name,
-		Region:   options.Region,
-		Size:     options.Size,
-		Image:    options.Image,
-		SSHKeys:  options.SSHKeys,
-		UserData: options.UserData,
-	}
-
+func (r *pgRepo) CreateTemplate(ctx context.Context, t Template) (*Template, error) {
 	if !t.IsValid() {
 		return nil, errors.New(ValidationErr)
 	}
