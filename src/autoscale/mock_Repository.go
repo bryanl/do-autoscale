@@ -8,15 +8,16 @@ type MockRepository struct {
 	mock.Mock
 }
 
-// CreateTemplate provides a mock function with given fields: ctx, tcr
-func (_m *MockRepository) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error) {
+func (_m *MockRepository) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error) {
 	ret := _m.Called(ctx, tcr)
 
-	var r0 Template
-	if rf, ok := ret.Get(0).(func(context.Context, CreateTemplateRequest) Template); ok {
+	var r0 *Template
+	if rf, ok := ret.Get(0).(func(context.Context, CreateTemplateRequest) *Template); ok {
 		r0 = rf(ctx, tcr)
 	} else {
-		r0 = ret.Get(0).(Template)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Template)
+		}
 	}
 
 	var r1 error
@@ -28,16 +29,16 @@ func (_m *MockRepository) CreateTemplate(ctx context.Context, tcr CreateTemplate
 
 	return r0, r1
 }
-
-// GetTemplate provides a mock function with given fields: ctx, name
-func (_m *MockRepository) GetTemplate(ctx context.Context, name string) (Template, error) {
+func (_m *MockRepository) GetTemplate(ctx context.Context, name string) (*Template, error) {
 	ret := _m.Called(ctx, name)
 
-	var r0 Template
-	if rf, ok := ret.Get(0).(func(context.Context, string) Template); ok {
+	var r0 *Template
+	if rf, ok := ret.Get(0).(func(context.Context, string) *Template); ok {
 		r0 = rf(ctx, name)
 	} else {
-		r0 = ret.Get(0).(Template)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Template)
+		}
 	}
 
 	var r1 error
@@ -49,17 +50,15 @@ func (_m *MockRepository) GetTemplate(ctx context.Context, name string) (Templat
 
 	return r0, r1
 }
-
-// ListTemplates provides a mock function with given fields: ctx
-func (_m *MockRepository) ListTemplates(ctx context.Context) ([]Template, error) {
+func (_m *MockRepository) ListTemplates(ctx context.Context) ([]*Template, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []Template
-	if rf, ok := ret.Get(0).(func(context.Context) []Template); ok {
+	var r0 []*Template
+	if rf, ok := ret.Get(0).(func(context.Context) []*Template); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]Template)
+			r0 = ret.Get(0).([]*Template)
 		}
 	}
 
@@ -72,8 +71,6 @@ func (_m *MockRepository) ListTemplates(ctx context.Context) ([]Template, error)
 
 	return r0, r1
 }
-
-// DeleteTemplate provides a mock function with given fields: ctx, name
 func (_m *MockRepository) DeleteTemplate(ctx context.Context, name string) error {
 	ret := _m.Called(ctx, name)
 
@@ -86,8 +83,6 @@ func (_m *MockRepository) DeleteTemplate(ctx context.Context, name string) error
 
 	return r0
 }
-
-// CreateGroup provides a mock function with given fields: ctx, gcr
 func (_m *MockRepository) CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error) {
 	ret := _m.Called(ctx, gcr)
 
@@ -107,8 +102,6 @@ func (_m *MockRepository) CreateGroup(ctx context.Context, gcr CreateGroupReques
 
 	return r0, r1
 }
-
-// GetGroup provides a mock function with given fields: ctx, name
 func (_m *MockRepository) GetGroup(ctx context.Context, name string) (Group, error) {
 	ret := _m.Called(ctx, name)
 
@@ -128,8 +121,6 @@ func (_m *MockRepository) GetGroup(ctx context.Context, name string) (Group, err
 
 	return r0, r1
 }
-
-// ListGroups provides a mock function with given fields: ctx
 func (_m *MockRepository) ListGroups(ctx context.Context) ([]Group, error) {
 	ret := _m.Called(ctx)
 
@@ -151,8 +142,6 @@ func (_m *MockRepository) ListGroups(ctx context.Context) ([]Group, error) {
 
 	return r0, r1
 }
-
-// DeleteGroup provides a mock function with given fields: ctx, name
 func (_m *MockRepository) DeleteGroup(ctx context.Context, name string) error {
 	ret := _m.Called(ctx, name)
 
@@ -165,8 +154,6 @@ func (_m *MockRepository) DeleteGroup(ctx context.Context, name string) error {
 
 	return r0
 }
-
-// SaveGroup provides a mock function with given fields: ctx, group
 func (_m *MockRepository) SaveGroup(ctx context.Context, group Group) error {
 	ret := _m.Called(ctx, group)
 
@@ -179,8 +166,6 @@ func (_m *MockRepository) SaveGroup(ctx context.Context, group Group) error {
 
 	return r0
 }
-
-// Close provides a mock function with given fields:
 func (_m *MockRepository) Close() error {
 	ret := _m.Called()
 

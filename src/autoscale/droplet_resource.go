@@ -26,7 +26,7 @@ type dropletConfig struct {
 	wg        *sync.WaitGroup
 	log       *logrus.Entry
 	groupName string
-	template  Template
+	template  *Template
 	tag       string
 	userData  string
 }

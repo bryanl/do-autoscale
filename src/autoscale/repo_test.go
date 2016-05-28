@@ -49,7 +49,7 @@ func TestCreateTemplate(t *testing.T) {
 			},
 		}
 
-		expected := Template{
+		expected := &Template{
 			ID:       "id",
 			Name:     "a-template",
 			Region:   "dev0",
@@ -95,7 +95,7 @@ func TestGetTemplate(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows(columns).
 				AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8("1,2"), "userdata"))
 
-		ogTmpl := Template{
+		ogTmpl := &Template{
 			ID:       "1",
 			Name:     "a-template",
 			Region:   "dev0",

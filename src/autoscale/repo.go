@@ -19,9 +19,9 @@ var (
 
 // Repository maps data to an entity models.
 type Repository interface {
-	CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error)
-	GetTemplate(ctx context.Context, name string) (Template, error)
-	ListTemplates(ctx context.Context) ([]Template, error)
+	CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error)
+	GetTemplate(ctx context.Context, name string) (*Template, error)
+	ListTemplates(ctx context.Context) ([]*Template, error)
 	DeleteTemplate(ctx context.Context, name string) error
 
 	CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error)
@@ -47,7 +47,7 @@ func NewRepository(db *sql.DB) (Repository, error) {
 	}, nil
 }
 
-func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (Template, error) {
+func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) (*Template, error) {
 
 	options := tcr.Options
 
@@ -61,47 +61,47 @@ func (r *pgRepo) CreateTemplate(ctx context.Context, tcr CreateTemplateRequest) 
 	}
 
 	if !t.IsValid() {
-		return Template{}, errors.New(ValidationErr)
+		return nil, errors.New(ValidationErr)
 	}
 
 	var id string
 
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return Template{}, err
+		return nil, err
 	}
 
 	err = sqlx.Get(tx, &id, sqlSaveTemplate,
 		t.Name, t.Region, t.Size, t.Image, t.SSHKeys, t.UserData)
 	if err != nil {
 		tx.Rollback()
-		return Template{}, err
+		return nil, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return Template{}, err
+		return nil, err
 	}
 
 	t.ID = id
-	return t, nil
+	return &t, nil
 }
 
-func (r *pgRepo) GetTemplate(ctx context.Context, name string) (Template, error) {
+func (r *pgRepo) GetTemplate(ctx context.Context, name string) (*Template, error) {
 	var t Template
 	if err := r.db.Get(&t, sqlGetTemplate, name); err != nil {
 		if err == sql.ErrNoRows {
-			return Template{}, ObjectMissingErr
+			return nil, ObjectMissingErr
 		}
 
-		return Template{}, err
+		return nil, err
 	}
 
-	return t, nil
+	return &t, nil
 }
 
-func (r *pgRepo) ListTemplates(ctx context.Context) ([]Template, error) {
-	ts := []Template{}
+func (r *pgRepo) ListTemplates(ctx context.Context) ([]*Template, error) {
+	ts := []*Template{}
 	if err := r.db.Select(&ts, sqlListTemplates); err != nil {
 		return nil, err
 	}

@@ -133,11 +133,12 @@ func (a *API) listTemplates(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	r := autoscale.TemplatesResponse{
-		Templates: tmpls,
+	j, err := jsonapi.Marshal(tmpls)
+	if err != nil {
+		log.WithError(err).Error("unable to marshal templates")
 	}
 
-	return c.JSON(http.StatusOK, r)
+	return c.JSONBlob(http.StatusOK, j)
 }
 
 func (a *API) GetTemplate(c echo.Context) error {
