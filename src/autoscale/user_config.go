@@ -1,7 +1,6 @@
 package autoscale
 
 import (
-	"pkg/ctxutil"
 	"pkg/do"
 	"pkg/doclient"
 	"sync"
@@ -29,7 +28,8 @@ var _ jsonapi.MarshalIdentifier = (*UserConfig)(nil)
 
 // NewUserConfig creates an instance of UserConfig.
 func NewUserConfig(ctx context.Context, dc *doclient.Client) (*UserConfig, error) {
-	log := ctxutil.LogFromContext(ctx).WithField("action", "user-config")
+	logger := logrus.New()
+	log := logrus.NewEntry(logger)
 	uc := &UserConfig{}
 	errs := []error{}
 

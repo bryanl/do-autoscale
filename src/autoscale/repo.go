@@ -21,7 +21,7 @@ var (
 type Repository interface {
 	CreateTemplate(ctx context.Context, t Template) (*Template, error)
 	GetTemplate(ctx context.Context, name string) (*Template, error)
-	ListTemplates(ctx context.Context) ([]*Template, error)
+	ListTemplates(ctx context.Context) ([]Template, error)
 	DeleteTemplate(ctx context.Context, name string) error
 
 	CreateGroup(ctx context.Context, g Group) (*Group, error)
@@ -88,8 +88,8 @@ func (r *pgRepo) GetTemplate(ctx context.Context, name string) (*Template, error
 	return &t, nil
 }
 
-func (r *pgRepo) ListTemplates(ctx context.Context) ([]*Template, error) {
-	ts := []*Template{}
+func (r *pgRepo) ListTemplates(ctx context.Context) ([]Template, error) {
+	ts := []Template{}
 	if err := r.db.Select(&ts, sqlListTemplates); err != nil {
 		return nil, err
 	}

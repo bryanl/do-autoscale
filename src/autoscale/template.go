@@ -3,6 +3,7 @@ package autoscale
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"strconv"
 
 	"github.com/manyminds/api2go/jsonapi"
 )
@@ -41,10 +42,23 @@ func (t *Template) SetID(id string) error {
 	return nil
 }
 
+func (t *Template) GetName() string {
+	return "template"
+}
+
 // SSHKey is a DO ssh key.
 type SSHKey struct {
 	ID          int    `json:",omitempty"`
 	Fingerprint string `json:",omitempty"`
+}
+
+func (s *SSHKey) GetID() string {
+	return strconv.Itoa(s.ID)
+}
+
+func (s *SSHKey) SetID(id string) {
+	i, _ := strconv.Atoi(id)
+	s.ID = i
 }
 
 // SSHKeys is a slice of DO ssh keys.

@@ -7,12 +7,12 @@ import (
 
 const (
 	// KeyEnv is for the environment key
-	KeyEnv = iota
+	KeyEnv = "key"
 	// KeyLog is for the log key
-	KeyLog
+	KeyLog = "log"
 
 	// KeyDOToken is for the do token key
-	KeyDOToken
+	KeyDOToken = "doToken"
 )
 
 // LogFromContext extracts a log from a context.Context

@@ -4,7 +4,7 @@ import (
 	"autoscale"
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,17 +12,37 @@ import (
 	"testing"
 
 	"github.com/manyminds/api2go/jsonapi"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"golang.org/x/net/context"
 )
 
-type apiTestFn func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL)
+type apiTestMocks struct {
+	templateResource    *MockResource
+	groupResource       *MockResource
+	userConfigResource  *MockResource
+	groupConfigResource *MockResource
+}
+type apiTestFn func(ctx context.Context, mocks *apiTestMocks, u *url.URL)
 
 func withAPITest(t *testing.T, fn apiTestFn) {
 	ctx := context.Background()
 	repo := &autoscale.MockRepository{}
 	api := New(ctx, repo)
+
+	mocks := &apiTestMocks{
+		templateResource:    &MockResource{},
+		groupResource:       &MockResource{},
+		userConfigResource:  &MockResource{},
+		groupConfigResource: &MockResource{},
+	}
+
+	api.templateResourceFactory = func() Resource { return mocks.templateResource }
+	api.groupResourceFactory = func() Resource { return mocks.groupResource }
+	api.userConfigResourceFactory = func() Resource { return mocks.userConfigResource }
+	api.groupConfigResourceFactory = func() Resource { return mocks.groupConfigResource }
 
 	ts := httptest.NewServer(api.Mux)
 	defer ts.Close()
@@ -30,19 +50,24 @@ func withAPITest(t *testing.T, fn apiTestFn) {
 	u, err := url.Parse(ts.URL)
 	require.NoError(t, err)
 
-	fn(ctx, repo, u)
+	fn(ctx, mocks, u)
 
-	repo.AssertExpectations(t)
+	assert.True(t, repo.AssertExpectations(t))
+	assert.True(t, mocks.templateResource.AssertExpectations(t))
+	assert.True(t, mocks.groupResource.AssertExpectations(t))
+	assert.True(t, mocks.userConfigResource.AssertExpectations(t))
+	assert.True(t, mocks.groupConfigResource.AssertExpectations(t))
 }
 
 func TestListTemplates(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		ogTmpls := []autoscale.Template{
-			{ID: "1"},
-			{ID: "2"},
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		ogTmpls := []*autoscale.Template{
+			{ID: "1", SSHKeys: autoscale.SSHKeys{{ID: 1}}},
+			{ID: "2", SSHKeys: autoscale.SSHKeys{{ID: 1}}},
 		}
 
-		repo.On("ListTemplates", ctx).Return(ogTmpls, nil)
+		resp := newResponse(ogTmpls, 200)
+		mocks.templateResource.On("FindAll", mock.Anything).Return(resp, nil)
 
 		u.Path = "/api/templates"
 
@@ -55,16 +80,20 @@ func TestListTemplates(t *testing.T) {
 		j, err := ioutil.ReadAll(res.Body)
 		require.NoError(t, err)
 
+		fmt.Println(string(j))
+
 		var templates []autoscale.Template
 		err = jsonapi.Unmarshal(j, &templates)
+		require.NoError(t, err)
 
 		require.Len(t, templates, 2)
 	})
 }
 
 func TestDeleteTemplate(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		repo.On("DeleteTemplate", ctx, "1").Return(nil)
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		resp := newResponse(nil, 204)
+		mocks.templateResource.On("Delete", mock.Anything, "1").Return(resp, nil)
 
 		u.Path = "/api/templates/1"
 
@@ -80,10 +109,11 @@ func TestDeleteTemplate(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		ogTmpl := autoscale.Template{ID: "1"}
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		ogTmpl := &autoscale.Template{ID: "1"}
 
-		repo.On("GetTemplate", ctx, "1").Return(ogTmpl, nil)
+		resp := newResponse(ogTmpl, 200)
+		mocks.templateResource.On("FindOne", mock.Anything, "1").Return(resp, nil)
 
 		u.Path = "/api/templates/1"
 
@@ -93,8 +123,11 @@ func TestGetTemplate(t *testing.T) {
 
 		require.Equal(t, 200, res.StatusCode)
 
+		j, err := ioutil.ReadAll(res.Body)
+		require.NoError(t, err)
+
 		var tmpl autoscale.Template
-		err = json.NewDecoder(res.Body).Decode(&tmpl)
+		err = jsonapi.Unmarshal(j, &tmpl)
 		require.NoError(t, err)
 
 		require.Equal(t, "1", tmpl.ID)
@@ -103,8 +136,9 @@ func TestGetTemplate(t *testing.T) {
 }
 
 func TestGetMissingTemplate(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		repo.On("GetTemplate", ctx, "1").Return(autoscale.Template{}, errors.New("boom"))
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		resp := newResponse(nil, 404)
+		mocks.templateResource.On("FindOne", ctx, "1").Return(resp, nil)
 
 		u.Path = "/api/templates/1"
 
@@ -117,7 +151,7 @@ func TestGetMissingTemplate(t *testing.T) {
 }
 
 func TestCreateTemplate(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 
 		newTmpl := autoscale.Template{
 			Name:   "a-template",
@@ -142,7 +176,8 @@ func TestCreateTemplate(t *testing.T) {
 			UserData: "#userdata",
 		}
 
-		repo.On("CreateTemplate", ctx, newTmpl).Return(tmpl, nil)
+		resp := newResponse(tmpl, 200)
+		mocks.templateResource.On("Create", ctx, newTmpl).Return(resp, nil)
 
 		u.Path = "/api/templates"
 
@@ -176,13 +211,14 @@ func TestCreateTemplate(t *testing.T) {
 }
 
 func TestListGroups(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		ogGroups := []autoscale.Group{
 			{ID: "12345", PolicyType: "value", MetricType: "load", Policy: &autoscale.ValuePolicy{}, Metric: &autoscale.FileLoad{}},
 			{ID: "6789", PolicyType: "value", MetricType: "load", Policy: &autoscale.ValuePolicy{}, Metric: &autoscale.FileLoad{}},
 		}
 
-		repo.On("ListGroups", ctx).Return(ogGroups, nil)
+		resp := newResponse(ogGroups, 200)
+		mocks.groupResource.On("FindAll", ctx).Return(resp, nil)
 
 		u.Path = "/api/groups"
 
@@ -196,8 +232,9 @@ func TestListGroups(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		repo.On("DeleteGroup", ctx, "abc").Return(nil)
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		resp := newResponse(nil, 204)
+		mocks.templateResource.On("Delete", ctx, "abc").Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
@@ -213,18 +250,15 @@ func TestDeleteGroup(t *testing.T) {
 }
 
 func TestUpdateGroup(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		ogGroup := autoscale.Group{ID: "abc"}
-		ogGroupUpdated := autoscale.Group{ID: "abc"}
 
-		repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
-		repo.On("SaveGroup", ctx, ogGroupUpdated).Return(nil)
+		resp := newResponse(ogGroup, 200)
+		mocks.groupResource.On("Update", ctx, ogGroup).Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
-		j := `{
-    "base_size": 6
-  }`
+		j := `{"base_size": 6}`
 
 		var buf bytes.Buffer
 		_, err := buf.WriteString(j)
@@ -241,10 +275,11 @@ func TestUpdateGroup(t *testing.T) {
 }
 
 func TestGetGroup(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		ogGroup := autoscale.Group{ID: "abc"}
 
-		repo.On("GetGroup", ctx, "abc").Return(ogGroup, nil)
+		resp := newResponse(ogGroup, 200)
+		mocks.groupResource.On("FindOne", ctx, "abc").Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
@@ -263,8 +298,9 @@ func TestGetGroup(t *testing.T) {
 }
 
 func TestGetMissingGroup(t *testing.T) {
-	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
-		repo.On("GetGroup", ctx, "1").Return(autoscale.Group{}, errors.New("missing"))
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		resp := newResponse(nil, 404)
+		mocks.templateResource.On("FindOne", ctx, "1").Return(resp, nil)
 
 		u.Path = "/api/groups/1"
 
@@ -277,53 +313,55 @@ func TestGetMissingGroup(t *testing.T) {
 	})
 }
 
-// func TestCreateGroup(t *testing.T) {
-// 	withAPITest(t, func(ctx context.Context, repo *autoscale.MockRepository, u *url.URL) {
+func TestCreateGroup(t *testing.T) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		group := autoscale.Group{
+			Name:         "group",
+			BaseName:     "as",
+			MetricType:   "load",
+			PolicyType:   "value",
+			TemplateName: "a-template",
+		}
 
-// 		cgr := autoscale.CreateGroupRequest{
-// 			Name:         "group",
-// 			BaseName:     "as",
-// 			MetricType:   "load",
-// 			PolicyType:   "value",
-// 			TemplateName: "a-template",
-// 		}
+		newGroup := autoscale.Group{
+			ID:           "1",
+			Name:         "group",
+			BaseName:     "as",
+			MetricType:   "load",
+			PolicyType:   "value",
+			TemplateName: "a-template",
+		}
 
-// 		group := autoscale.Group{
-// 			ID:           "1",
-// 			Name:         "group",
-// 			BaseName:     "as",
-// 			MetricType:   "load",
-// 			PolicyType:   "value",
-// 			TemplateName: "a-template",
-// 		}
+		resp := newResponse(newGroup, 201)
+		mocks.groupResource.On("Create", ctx, group).Return(resp, nil)
 
-// 		repo.On("CreateGroup", ctx, cgr).Return(group, nil)
+		u.Path = "/api/groups"
 
-// 		u.Path = "/api/groups"
+		req := []byte(`{
+    "name": "group",
+    "base_name": "as",
+    "metric_type": "load",
+    "policy_type": "value",
+    "template_name": "a-template"
+  }`)
 
-// 		req := []byte(`{
-//     "name": "group",
-//     "base_name": "as",
-//     "metric_type": "load",
-//     "policy_type": "value",
-//     "template_name": "a-template"
-//   }`)
+		var buf bytes.Buffer
+		_, err := buf.Write(req)
+		require.NoError(t, err)
 
-// 		var buf bytes.Buffer
-// 		_, err := buf.Write(req)
-// 		require.NoError(t, err)
+		res, err := http.Post(u.String(), "application/json", &buf)
+		require.NoError(t, err)
+		defer res.Body.Close()
 
-// 		res, err := http.Post(u.String(), "application/json", &buf)
-// 		require.NoError(t, err)
-// 		defer res.Body.Close()
+		require.Equal(t, 201, res.StatusCode)
 
-// 		require.Equal(t, 201, res.StatusCode)
+		b, err := ioutil.ReadAll(res.Body)
+		require.NoError(t, err)
 
-// 		var newGroup autoscale.Group
-// 		err = json.NewDecoder(res.Body).Decode(&newGroup)
-// 		require.NoError(t, err)
+		var g autoscale.Group
+		err = jsonapi.Unmarshal(b, &g)
+		require.NoError(t, err)
 
-// 		require.Equal(t, newGroup, group)
-
-// 	})
-// }
+		require.Equal(t, newGroup, g)
+	})
+}

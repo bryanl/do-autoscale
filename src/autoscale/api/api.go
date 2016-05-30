@@ -2,7 +2,7 @@ package api
 
 import (
 	"autoscale/gen"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"pkg/ctxutil"
 	"pkg/echologger"
@@ -21,19 +21,6 @@ import (
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/satori/go.uuid"
 )
-
-type errorMsg struct {
-	Title string `json:"title"`
-}
-
-func writeError(w http.ResponseWriter, msg string, code int) {
-	em := errorMsg{
-		Title: msg,
-	}
-
-	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(&em)
-}
 
 func errorHandler(err error, c echo.Context) {
 	log := ctxutil.LogFromContext(c.NetContext())
@@ -83,6 +70,11 @@ type API struct {
 	Mux  http.Handler
 	repo autoscale.Repository
 	ctx  context.Context
+
+	templateResourceFactory    func() Resource
+	groupResourceFactory       func() Resource
+	userConfigResourceFactory  func() Resource
+	groupConfigResourceFactory func() Resource
 }
 
 // New creates an instance of API.
@@ -99,6 +91,19 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		Mux:  std,
 		repo: repo,
 		ctx:  ctx,
+
+		templateResourceFactory: func() Resource {
+			return &templateResource{repo: repo}
+		},
+		groupResourceFactory: func() Resource {
+			return &groupResource{repo: repo}
+		},
+		userConfigResourceFactory: func() Resource {
+			return &userConfigResource{}
+		},
+		groupConfigResourceFactory: func() Resource {
+			return &groupConfigResource{repo: repo}
+		},
 	}
 
 	log := ctxutil.LogFromContext(ctx)
@@ -113,7 +118,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 			}
 
 			// newCtx := context.WithValue(c, "RequestID", reqID)
-			// newCtx := context.WithValue(c, "log", log)
+			// newCtx = context.WithValue(newCtx, "log", log)
 			// c.SetNetContext(newCtx)
 
 			return next(c)
@@ -129,7 +134,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 
 	g := e.Group("/api")
 
-	g.Get("/templates/:id", a.GetTemplate)
+	g.Get("/templates/:id", a.getTemplate)
 	g.Get("/templates", a.listTemplates)
 	g.Post("/templates", a.createTemplate)
 	g.Delete("/templates/:id", a.deleteTemplate)
@@ -175,195 +180,136 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	return a
 }
 
-func (a *API) listTemplates(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-	tmpls, err := a.repo.ListTemplates(a.ctx)
-	if err != nil {
-		log.WithError(err).Error("list templates")
+func jsonAPIResponse(c echo.Context, resp Response) error {
+	result := resp.Result()
+	fmt.Printf("result type: %T, %#v", result, result)
 
-		return echo.NewHTTPError(http.StatusInternalServerError)
+	j, err := jsonapi.Marshal(resp.Result())
+	if err != nil {
+		return err
 	}
 
-	j, err := jsonapi.Marshal(tmpls)
-	if err != nil {
-		log.WithError(err).Error("unable to marshal templates")
-	}
-
-	return c.JSONBlob(http.StatusOK, j)
+	return c.JSONBlob(resp.StatusCode(), j)
 }
 
-func (a *API) GetTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	id := c.Param("id")
-
-	tmpl, err := a.repo.GetTemplate(a.ctx, id)
+func (a *API) listTemplates(c echo.Context) error {
+	resp, err := a.templateResourceFactory().FindAll(c)
 	if err != nil {
-		log.WithError(err).Error("retrieve template")
-		return echo.ErrNotFound
+		return err
 	}
 
-	return c.JSON(http.StatusOK, tmpl)
+	return jsonAPIResponse(c, resp)
+}
+
+func (a *API) getTemplate(c echo.Context) error {
+	id := c.Param("id")
+	resp, err := a.templateResourceFactory().FindOne(c, id)
+	if err != nil {
+		return err
+	}
+
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) createTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
 	var tmpl autoscale.Template
 	if err := c.Bind(&tmpl); err != nil {
 		return err
 	}
 
-	newTmpl, err := a.repo.CreateTemplate(a.ctx, tmpl)
+	resp, err := a.templateResourceFactory().Create(c, tmpl)
 	if err != nil {
-		log.WithError(err).Error("create template")
-
-		return echo.NewHTTPError(http.StatusBadRequest)
+		return err
 	}
 
-	j, err := jsonapi.Marshal(newTmpl)
-	if err != nil {
-		log.WithError(err).Error("unable to marshal user config")
-	}
-
-	return c.JSONBlob(http.StatusOK, j)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) deleteTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
 	id := c.Param("id")
-
-	err := a.repo.DeleteTemplate(a.ctx, id)
+	resp, err := a.templateResourceFactory().Delete(c, id)
 	if err != nil {
-		log.WithError(err).Error("Delete template")
-		return echo.NewHTTPError(http.StatusBadRequest)
+		return err
 	}
 
-	return c.NoContent(204)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) listGroups(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	groups, err := a.repo.ListGroups(a.ctx)
+	resp, err := a.groupResourceFactory().FindAll(c)
 	if err != nil {
-		log.WithError(err).Error("list groups")
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 
-	return c.JSON(http.StatusOK, groups)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) getGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
 	id := c.Param("id")
-
-	group, err := a.repo.GetGroup(a.ctx, id)
+	resp, err := a.groupResourceFactory().FindOne(c, id)
 	if err != nil {
-		log.WithError(err).Error("Get group")
-		return echo.ErrNotFound
+		return err
 	}
 
-	return c.JSON(http.StatusOK, group)
+	return jsonAPIResponse(c, resp)
+
 }
 
 func (a *API) createGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	var newGroup autoscale.Group
-	if err := c.Bind(&newGroup); err != nil {
+	var group autoscale.Group
+	if err := c.Bind(&group); err != nil {
 		return err
 	}
 
-	g, err := a.repo.CreateGroup(a.ctx, newGroup)
+	resp, err := a.groupResourceFactory().Create(c, group)
+
 	if err != nil {
-		log.WithError(err).Error("create group")
-		return echo.NewHTTPError(http.StatusBadRequest)
+		return err
 	}
 
-	j, err := jsonapi.Marshal(g)
-	if err != nil {
-		log.WithError(err).Error("unable to marshal group")
-	}
-
-	return c.JSONBlob(http.StatusCreated, j)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) deleteGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
 	id := c.Param("id")
-
-	err := a.repo.DeleteGroup(a.ctx, id)
+	resp, err := a.groupResourceFactory().Delete(c, id)
 	if err != nil {
-		log.WithError(err).Error("Delete group")
-		return echo.NewHTTPError(http.StatusBadRequest)
-	}
-
-	return c.NoContent(204)
-}
-
-func (a *API) updateGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	id := c.Param("id")
-
-	var ugr autoscale.UpdateGroupRequest
-	if err := c.Bind(&ugr); err != nil {
 		return err
 	}
 
-	g, err := a.repo.GetGroup(a.ctx, id)
-	if err != nil {
-		log.WithError(err).Error("can't retrieve group")
-		return echo.NewHTTPError(http.StatusBadRequest)
+	return jsonAPIResponse(c, resp)
+
+}
+
+func (a *API) updateGroup(c echo.Context) error {
+	var group autoscale.Group
+	if err := c.Bind(&group); err != nil {
+		return err
 	}
 
-	err = a.repo.SaveGroup(a.ctx, *g)
+	resp, err := a.groupResourceFactory().Update(c, group)
 
 	if err != nil {
-		log.WithError(err).Error("update group")
-		return echo.NewHTTPError(http.StatusBadRequest)
+		return err
 	}
 
-	return c.JSON(http.StatusOK, g)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) userConfig(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	client := autoscale.DOClientFactory()
-	uc, err := autoscale.NewUserConfig(c, client)
+	resp, err := a.userConfigResourceFactory().FindAll(c)
 	if err != nil {
-		log.WithError(err).Error("retrieve user config")
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 
-	j, err := jsonapi.Marshal(uc)
-	if err != nil {
-		log.WithError(err).Error("unable to marshal user config")
-	}
-
-	return c.JSONBlob(http.StatusOK, j)
+	return jsonAPIResponse(c, resp)
 }
 
 func (a *API) groupConfig(c echo.Context) error {
-	log := ctxutil.LogFromContext(c.NetContext())
-
-	client := autoscale.DOClientFactory()
-	gc, err := autoscale.NewGroupConfig(c, client, a.repo)
+	resp, err := a.groupConfigResourceFactory().FindAll(c)
 	if err != nil {
-		log.WithError(err).Error("retrieve group config")
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 
-	j, err := jsonapi.Marshal(gc)
-	if err != nil {
-		log.WithError(err).Error("unable to marshal group config")
-	}
-
-	return c.JSONBlob(http.StatusOK, j)
-
+	return jsonAPIResponse(c, resp)
 }

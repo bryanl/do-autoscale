@@ -5,7 +5,6 @@ export default Ember.Component.extend({
   // form items
   name: "group-1",
   baseName: "doas",
-  templateName: "template-1",
   metricType: "load",
   metric: {},
   policyType: "value",
@@ -21,6 +20,7 @@ export default Ember.Component.extend({
 
   actions: {
     onTemplateChanged() {
+      console.log(this.get('template'));
       this.set('currentTemplate', this.get('template'));
     },
     onPolicyTypeChanged() {
@@ -31,7 +31,7 @@ export default Ember.Component.extend({
       var createRequest = {
         name: this.name,
         baseName: this.baseName,
-        templateName: this.templateName,
+        templateName: this.template.get("name"),
         metricType: this.metricType,
         metric: this.metric,
         policyType: this.policyType,
@@ -40,10 +40,10 @@ export default Ember.Component.extend({
 
       console.log(createRequest);
 
-      const promise = this.get("onCreate")(createRequest);
-      promise.then(() => {
-        console.log("group created");
-      });
+      // const promise = this.get("onCreate")(createRequest);
+      // promise.then(() => {
+      //   console.log("group created");
+      // });
     }
   }
 });

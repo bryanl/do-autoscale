@@ -50,15 +50,15 @@ func (_m *MockRepository) GetTemplate(ctx context.Context, name string) (*Templa
 
 	return r0, r1
 }
-func (_m *MockRepository) ListTemplates(ctx context.Context) ([]*Template, error) {
+func (_m *MockRepository) ListTemplates(ctx context.Context) ([]Template, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []*Template
-	if rf, ok := ret.Get(0).(func(context.Context) []*Template); ok {
+	var r0 []Template
+	if rf, ok := ret.Get(0).(func(context.Context) []Template); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*Template)
+			r0 = ret.Get(0).([]Template)
 		}
 	}
 

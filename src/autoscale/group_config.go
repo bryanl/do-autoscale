@@ -9,10 +9,10 @@ import (
 
 // GroupConfig are the options available for creating a group.
 type GroupConfig struct {
-	ID        string      `json:"-"`
-	Policies  []string    `json:"policies"`
-	Metrics   []string    `json:"metrics"`
-	Templates []*Template `json:"-"`
+	ID        string     `json:"-"`
+	Policies  []string   `json:"policies"`
+	Metrics   []string   `json:"metrics"`
+	Templates []Template `json:"-"`
 }
 
 var _ jsonapi.MarshalIncludedRelations = (*GroupConfig)(nil)
@@ -67,7 +67,7 @@ func (gc *GroupConfig) GetReferencedIDs() []jsonapi.ReferenceID {
 func (gc *GroupConfig) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	result := []jsonapi.MarshalIdentifier{}
 	for key := range gc.Templates {
-		result = append(result, gc.Templates[key])
+		result = append(result, &gc.Templates[key])
 	}
 
 	return result
