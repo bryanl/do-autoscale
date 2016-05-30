@@ -18,10 +18,8 @@
           <td>{{template.size}}</td>
           <td>{{template.image}}</td>
           <td>
-            {{#each template.sshKeys as |key|}}
-              {{ssh-key-show key=key}}
-            {{/each}}
-            </td>
+            {{template.sshKeys.length}} keys
+          </td>
         </tr>
       </tbody>
     </table>
