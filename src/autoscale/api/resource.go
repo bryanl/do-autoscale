@@ -96,8 +96,8 @@ func (r *templateResource) FindAll(c context.Context) (Response, error) {
 	}
 
 	newTemplates := []*autoscale.Template{}
-	for _, t := range templates {
-		newTemplates = append(newTemplates, &t)
+	for i := range templates {
+		newTemplates = append(newTemplates, &templates[i])
 	}
 
 	return newResponse(newTemplates, http.StatusOK), nil
