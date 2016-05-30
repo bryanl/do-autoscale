@@ -66,12 +66,11 @@ func NewDB(ctx context.Context, user, password, addr, database string) (*sql.DB,
 
 	log.Info("database is ready")
 
-	env := ctxutil.StringFromContext(ctx, "env")
-
-	if env != "development" {
+	if ctxutil.IsCurrentEnv(ctx, "development") {
 		if err := migrateDatabase(log, dbURL); err != nil {
 			return nil, err
 		}
+
 	}
 
 	return db, nil

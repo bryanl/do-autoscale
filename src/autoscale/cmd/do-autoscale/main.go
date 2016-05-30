@@ -3,6 +3,7 @@ package main
 import (
 	"autoscale"
 	"autoscale/api"
+	"pkg/ctxutil"
 
 	"golang.org/x/net/context"
 
@@ -98,10 +99,10 @@ func initContext() (context.Context, Specification, *logrus.Entry) {
 	}
 
 	log := logger.WithField("env", s.Env)
-	ctx := context.WithValue(context.Background(), "log", log)
+	ctx := context.WithValue(context.Background(), ctxutil.KeyLog, log)
 	ctx = context.WithValue(ctx, autoscale.PrometheusURLContextKey, s.PrometheusURL)
-	ctx = context.WithValue(ctx, "env", s.Env)
-	ctx = context.WithValue(ctx, "doToken", s.AccessToken)
+	ctx = context.WithValue(ctx, ctxutil.KeyEnv, s.Env)
+	ctx = context.WithValue(ctx, ctxutil.KeyDOToken, s.AccessToken)
 
 	return ctx, s, log
 }
