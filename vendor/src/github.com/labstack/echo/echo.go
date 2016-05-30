@@ -33,7 +33,7 @@ Example:
 	    e.Run(standard.New(":1323"))
 	}
 
-Learn more at https://labstack.com/echo
+Learn more at https://echo.labstack.com
 */
 package echo
 
@@ -263,6 +263,11 @@ func (e *Echo) SetLogLevel(l uint8) {
 	e.logger.SetLevel(l)
 }
 
+// SetLogger defines a custom logger.
+func (e *Echo) SetLogger(l *log.Logger) {
+	e.logger = l
+}
+
 // Logger returns the logger instance.
 func (e *Echo) Logger() *log.Logger {
 	return e.logger
@@ -471,7 +476,8 @@ func (e *Echo) add(method, path string, handler HandlerFunc, middleware ...Middl
 		Path:    path,
 		Handler: name,
 	}
-	e.router.routes = append(e.router.routes, r)
+	e.router.routes[method+path] = r
+	// e.router.routes = append(e.router.routes, r)
 }
 
 // Group creates a new router group with prefix and optional group-level middleware.
@@ -513,7 +519,11 @@ func (e *Echo) URL(h HandlerFunc, params ...interface{}) string {
 
 // Routes returns the registered routes.
 func (e *Echo) Routes() []Route {
-	return e.router.routes
+	routes := []Route{}
+	for _, v := range e.router.routes {
+		routes = append(routes, v)
+	}
+	return routes
 }
 
 // AcquireContext returns an empty `Context` instance from the pool.

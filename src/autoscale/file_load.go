@@ -68,7 +68,9 @@ func FileLoadFromJSON(in json.RawMessage) FileLoadOption {
 		if err := json.Unmarshal(in, &c); err != nil {
 			fl.StatsDir = DefaultStatsDir
 		} else {
-			fl.StatsDir = c["stats_dir"].(string)
+			if dir, ok := c["stats_dir"].(string); ok {
+				fl.StatsDir = dir
+			}
 		}
 
 		return nil

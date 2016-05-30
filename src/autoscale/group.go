@@ -8,10 +8,10 @@ import (
 	"pkg/doclient"
 	"regexp"
 	"sync"
-
-	"golang.org/x/net/context"
+	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/manyminds/api2go/jsonapi"
 )
 
 var (
@@ -41,87 +41,12 @@ var (
 		ScaleUpBy:      2,
 		ScaleDownValue: 0.2,
 		ScaleDownBy:    1,
-		WarmUpDuration: "10s",
+		WarmUpDuration: 10 * time.Second,
 	}
 )
 
 // ResourceManagerFactoryFn is a function that returns ResourceManagerFactory.
 type ResourceManagerFactoryFn func(g *Group) (ResourceManager, error)
-
-// CreateTemplateRequest is a template create request.
-type CreateTemplateRequest struct {
-	Options TemplateOptions `json:"template"`
-}
-
-// TemplateResponse is a template response.
-type TemplateResponse struct {
-	Template Template `json:"template"`
-}
-
-// TemplatesResponse is a response with multiple templates.
-type TemplatesResponse struct {
-	Templates []Template `json:"templates"`
-}
-
-// TemplateOptions are options for a template create request.
-type TemplateOptions struct {
-	Name     string      `json:"name"`
-	Region   string      `json:"region"`
-	Size     string      `json:"size"`
-	Image    string      `json:"image"`
-	SSHKeys  StringSlice `json:"ssh_keys"`
-	UserData string      `json:"user_data"`
-}
-
-// CreateGroupRequest is a group create request.
-type CreateGroupRequest struct {
-	Name         string          `json:"name"`
-	BaseName     string          `json:"base_name"`
-	TemplateName string          `json:"template_name"`
-	MetricType   string          `json:"metric_type"`
-	Metric       json.RawMessage `json:"metric,omitempty"`
-	PolicyType   string          `json:"policy_type"`
-	Policy       json.RawMessage `json:"policy,omitempty"`
-}
-
-// ConvertToGroup convertes a CreateGroupRequest to a Group
-func (cgr *CreateGroupRequest) ConvertToGroup(ctx context.Context) (*Group, error) {
-	g := &Group{
-		Name:         cgr.Name,
-		BaseName:     cgr.BaseName,
-		TemplateName: cgr.TemplateName,
-		MetricType:   cgr.MetricType,
-		PolicyType:   cgr.PolicyType,
-	}
-
-	switch g.MetricType {
-	case "load":
-		fl, err := NewFileLoad(FileLoadFromJSON(cgr.Metric))
-		if err != nil {
-			return nil, err
-		}
-
-		g.Metric = fl
-
-	default:
-		return nil, fmt.Errorf("unknown metric type: %q", g.MetricType)
-	}
-
-	switch g.PolicyType {
-	case "value":
-		vp, err := NewValuePolicy(ValuePolicyFromJSON(cgr.Policy))
-		if err != nil {
-			return nil, err
-		}
-
-		g.Policy = vp
-
-	default:
-		return nil, fmt.Errorf("unknown policy type: %q", g.PolicyType)
-	}
-
-	return g, nil
-}
 
 // UpdateGroupRequest is a group update request.
 type UpdateGroupRequest struct {
@@ -130,14 +55,126 @@ type UpdateGroupRequest struct {
 
 // Group is an autoscale group
 type Group struct {
-	ID           string  `json:"ID" db:"id"`
-	Name         string  `json:"name" db:"name"`
-	BaseName     string  `json:"base_name" db:"base_name"`
-	TemplateName string  `json:"template_name" db:"template_name"`
-	MetricType   string  `json:"metric_type" db:"metric_type"`
-	Metric       Metrics `json:"metric" db:"metric"`
-	PolicyType   string  `json:"policy_type" db:"policy_type"`
-	Policy       Policy  `json:"policy" db:"policy"`
+	ID           string          `json:"ID" db:"id"`
+	Name         string          `json:"name" db:"name"`
+	BaseName     string          `json:"base-name" db:"base_name"`
+	TemplateName string          `json:"template_name" db:"template_name"`
+	MetricType   string          `json:"metric-type" db:"metric_type"`
+	Metric       Metrics         `json:"metric"`
+	RawMetric    json.RawMessage `json:"raw-metric" db:"metric"`
+	PolicyType   string          `json:"policy-type" db:"policy_type"`
+	Policy       Policy          `json:"policy" `
+	RawPolicy    json.RawMessage `json:"raw-policy" db:"policy"`
+}
+
+var _ jsonapi.MarshalIdentifier = (*Group)(nil)
+var _ jsonapi.UnmarshalIdentifier = (*Group)(nil)
+var _ json.Marshaler = (*Group)(nil)
+var _ json.Unmarshaler = (*Group)(nil)
+
+// GetID gets the ID for a group.
+func (g *Group) GetID() string {
+	return g.ID
+}
+
+// SetID sets the ID for a group.
+func (g *Group) SetID(id string) error {
+	g.ID = id
+	return nil
+}
+
+type groupToJSON struct {
+	ID           string          `json:"ID"`
+	Name         string          `json:"name"`
+	BaseName     string          `json:"base-name"`
+	TemplateName string          `json:"template-name"`
+	MetricType   string          `json:"metric-type"`
+	Metric       json.RawMessage `json:"metric"`
+	PolicyType   string          `json:"policy-type"`
+	Policy       json.RawMessage `json:"policy"`
+}
+
+type jsonToGroup struct {
+	ID           string          `json:"ID"`
+	Name         string          `json:"name"`
+	BaseName     string          `json:"base-name"`
+	TemplateName string          `json:"template-name"`
+	MetricType   string          `json:"metric-type"`
+	Metric       json.RawMessage `json:"metric"`
+	PolicyType   string          `json:"policy-type"`
+	Policy       json.RawMessage `json:"policy"`
+}
+
+// MarshalJSON marshals a Group into json.
+func (g *Group) MarshalJSON() ([]byte, error) {
+	m, err := json.Marshal(g.Metric)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := json.Marshal(g.Policy)
+	if err != nil {
+		return nil, err
+	}
+
+	tmp := groupToJSON{
+		ID:           g.ID,
+		Name:         g.Name,
+		BaseName:     g.BaseName,
+		TemplateName: g.TemplateName,
+		MetricType:   g.MetricType,
+		Metric:       m,
+		PolicyType:   g.PolicyType,
+		Policy:       p,
+	}
+
+	return json.Marshal(&tmp)
+}
+
+// UnmarshalJSON converts json into a Group.
+func (g *Group) UnmarshalJSON(b []byte) error {
+	tmp := jsonToGroup{}
+
+	if err := json.Unmarshal(b, &tmp); err != nil {
+		return err
+	}
+
+	g.ID = tmp.ID
+	g.Name = tmp.Name
+	g.BaseName = tmp.BaseName
+	g.TemplateName = tmp.TemplateName
+	g.MetricType = tmp.MetricType
+	g.PolicyType = tmp.PolicyType
+	g.RawMetric = tmp.Metric
+	g.RawPolicy = tmp.Policy
+
+	switch g.MetricType {
+	case "load":
+		fl, err := NewFileLoad(FileLoadFromJSON(tmp.Metric))
+		if err != nil {
+			return err
+		}
+
+		g.Metric = fl
+
+	default:
+		return fmt.Errorf("unknown metric type: %q", g.MetricType)
+	}
+
+	switch g.PolicyType {
+	case "value":
+		vp, err := NewValuePolicy(ValuePolicyFromJSON(tmp.Policy))
+		if err != nil {
+			return err
+		}
+
+		g.Policy = vp
+
+	default:
+		return fmt.Errorf("unknown policy type: %q", g.PolicyType)
+	}
+
+	return nil
 }
 
 // IsValid returns if the template is valid or not.

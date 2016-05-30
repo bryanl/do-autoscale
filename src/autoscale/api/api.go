@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"pkg/ctxutil"
 	"pkg/echologger"
+	"strconv"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -31,6 +33,49 @@ func writeError(w http.ResponseWriter, msg string, code int) {
 
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(&em)
+}
+
+func errorHandler(err error, c echo.Context) {
+	log := ctxutil.LogFromContext(c.NetContext())
+
+	code := http.StatusInternalServerError
+	msg := http.StatusText(code)
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+		msg = he.Message
+	}
+
+	reqID := c.Request().Header().Get("X-Request-Id")
+
+	// TODO only show this if we are in dev mode
+	msg = err.Error()
+
+	if !c.Response().Committed() {
+		req := c.Request()
+		ctype := req.Header().Get(echo.HeaderContentType)
+
+		switch {
+		case strings.HasPrefix(ctype, MIMEApplicationJSONAPI):
+			apiErrs := jsonAPIErrors{
+				{
+					ID:     reqID,
+					Status: strconv.Itoa(code),
+					Detail: msg,
+				},
+			}
+
+			if b, err := jsonapi.Marshal(apiErrs); err == nil {
+				c.JSONBlob(code, b)
+			} else {
+				log.WithError(err).Error("unable to create error response")
+			}
+
+		default:
+			c.String(code, msg)
+		}
+	}
+
+	log.WithError(err).WithField("request_id", reqID).Error("api error")
 }
 
 // API is the autoscale API.
@@ -67,9 +112,9 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 
 			}
 
-			newCtx := context.WithValue(c, "RequestID", reqID)
-			newCtx = context.WithValue(newCtx, "log", log)
-			c.SetNetContext(newCtx)
+			// newCtx := context.WithValue(c, "RequestID", reqID)
+			// newCtx := context.WithValue(c, "log", log)
+			// c.SetNetContext(newCtx)
 
 			return next(c)
 		}
@@ -94,6 +139,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Delete("/groups/:id", a.deleteGroup)
 	g.Put("/groups/:id", a.updateGroup)
 	g.Get("/user-configs", a.userConfig)
+	g.Get("/group-configs", a.groupConfig)
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -124,11 +170,13 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		return nil
 	})
 
+	e.SetHTTPErrorHandler(errorHandler)
+
 	return a
 }
 
 func (a *API) listTemplates(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 	tmpls, err := a.repo.ListTemplates(a.ctx)
 	if err != nil {
 		log.WithError(err).Error("list templates")
@@ -145,7 +193,7 @@ func (a *API) listTemplates(c echo.Context) error {
 }
 
 func (a *API) GetTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	id := c.Param("id")
 
@@ -159,7 +207,7 @@ func (a *API) GetTemplate(c echo.Context) error {
 }
 
 func (a *API) createTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	var tmpl autoscale.Template
 	if err := c.Bind(&tmpl); err != nil {
@@ -168,7 +216,7 @@ func (a *API) createTemplate(c echo.Context) error {
 
 	newTmpl, err := a.repo.CreateTemplate(a.ctx, tmpl)
 	if err != nil {
-		log.WithError(err).Error("Delete template")
+		log.WithError(err).Error("create template")
 
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
@@ -182,7 +230,7 @@ func (a *API) createTemplate(c echo.Context) error {
 }
 
 func (a *API) deleteTemplate(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	id := c.Param("id")
 
@@ -196,7 +244,7 @@ func (a *API) deleteTemplate(c echo.Context) error {
 }
 
 func (a *API) listGroups(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	groups, err := a.repo.ListGroups(a.ctx)
 	if err != nil {
@@ -208,7 +256,7 @@ func (a *API) listGroups(c echo.Context) error {
 }
 
 func (a *API) getGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	id := c.Param("id")
 
@@ -222,24 +270,29 @@ func (a *API) getGroup(c echo.Context) error {
 }
 
 func (a *API) createGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
-	var cgr autoscale.CreateGroupRequest
-	if err := c.Bind(&cgr); err != nil {
+	var newGroup autoscale.Group
+	if err := c.Bind(&newGroup); err != nil {
 		return err
 	}
 
-	g, err := a.repo.CreateGroup(a.ctx, cgr)
+	g, err := a.repo.CreateGroup(a.ctx, newGroup)
 	if err != nil {
 		log.WithError(err).Error("create group")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	return c.JSON(http.StatusCreated, g)
+	j, err := jsonapi.Marshal(g)
+	if err != nil {
+		log.WithError(err).Error("unable to marshal group")
+	}
+
+	return c.JSONBlob(http.StatusCreated, j)
 }
 
 func (a *API) deleteGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	id := c.Param("id")
 
@@ -253,7 +306,7 @@ func (a *API) deleteGroup(c echo.Context) error {
 }
 
 func (a *API) updateGroup(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	id := c.Param("id")
 
@@ -268,7 +321,7 @@ func (a *API) updateGroup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	err = a.repo.SaveGroup(a.ctx, g)
+	err = a.repo.SaveGroup(a.ctx, *g)
 
 	if err != nil {
 		log.WithError(err).Error("update group")
@@ -279,7 +332,7 @@ func (a *API) updateGroup(c echo.Context) error {
 }
 
 func (a *API) userConfig(c echo.Context) error {
-	log := ctxutil.LogFromContext(c)
+	log := ctxutil.LogFromContext(c.NetContext())
 
 	client := autoscale.DOClientFactory()
 	uc, err := autoscale.NewUserConfig(c, client)
@@ -294,4 +347,23 @@ func (a *API) userConfig(c echo.Context) error {
 	}
 
 	return c.JSONBlob(http.StatusOK, j)
+}
+
+func (a *API) groupConfig(c echo.Context) error {
+	log := ctxutil.LogFromContext(c.NetContext())
+
+	client := autoscale.DOClientFactory()
+	gc, err := autoscale.NewGroupConfig(c, client, a.repo)
+	if err != nil {
+		log.WithError(err).Error("retrieve group config")
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	j, err := jsonapi.Marshal(gc)
+	if err != nil {
+		log.WithError(err).Error("unable to marshal group config")
+	}
+
+	return c.JSONBlob(http.StatusOK, j)
+
 }

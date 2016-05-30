@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+var (
+	defaultWarmUpDuration = time.Minute
+)
+
 // MetricNotifier notifies that a metric has changed.
 type MetricNotifier interface {
 	MetricNotify() error
@@ -25,13 +29,13 @@ type Policy interface {
 }
 
 type valuePolicyData struct {
-	MinSize        int     `json:"min_size"`
-	MaxSize        int     `json:"max_size"`
-	ScaleUpValue   float64 `json:"scale_up_value"`
-	ScaleUpBy      int     `json:"scale_up_by"`
-	ScaleDownValue float64 `json:"scale_down_value"`
-	ScaleDownBy    int     `json:"scale_down_by"`
-	WarmUpDuration string  `json:"warm_up_duration"`
+	MinSize        int           `json:"min_size"`
+	MaxSize        int           `json:"max_size"`
+	ScaleUpValue   float64       `json:"scale_up_value"`
+	ScaleUpBy      int           `json:"scale_up_by"`
+	ScaleDownValue float64       `json:"scale_down_value"`
+	ScaleDownBy    int           `json:"scale_down_by"`
+	WarmUpDuration time.Duration `json:"warm_up_duration"`
 }
 
 // ValuePolicyOption is a functional option for configuring a ValuePolicy.
@@ -39,9 +43,8 @@ type ValuePolicyOption func(*ValuePolicy) error
 
 // ValuePolicy is a Policy that scales up or down based on the current value.
 type ValuePolicy struct {
-	vpd          valuePolicyData
-	warmUpPeriod time.Duration
-	mu           *sync.Mutex
+	vpd valuePolicyData
+	mu  *sync.Mutex
 }
 
 var _ Policy = (*ValuePolicy)(nil)
@@ -62,7 +65,7 @@ func NewValuePolicy(options ...ValuePolicyOption) (*ValuePolicy, error) {
 }
 
 // ValuePolicyScale sets scale parameters for a ValuePolicy.
-func ValuePolicyScale(minSize int, scaleUpValue float64, scaleUpBy int, scaleDownValue float64, scaleDownBy int) ValuePolicyOption {
+func ValuePolicyScale(minSize, maxSize int, scaleUpValue float64, scaleUpBy int, scaleDownValue float64, scaleDownBy int) ValuePolicyOption {
 	return func(vp *ValuePolicy) error {
 		vp.vpd.ScaleUpValue = scaleUpValue
 		vp.vpd.ScaleUpBy = scaleUpBy
@@ -90,13 +93,7 @@ func ValuePolicyFromJSON(in json.RawMessage) ValuePolicyOption {
 				vpd.ScaleUpValue, vpd.ScaleDownValue)
 		}
 
-		dur, err := time.ParseDuration(vpd.WarmUpDuration)
-		if err != nil {
-			return err
-		}
-
 		vp.vpd = vpd
-		vp.warmUpPeriod = dur
 
 		return nil
 	}
@@ -144,7 +141,7 @@ func (p *ValuePolicy) CalculateSize(resourceCount int, value float64) int {
 
 // WarmUpPeriod is the time needed for the new service to warm up. No checks should happen in this period.
 func (p *ValuePolicy) WarmUpPeriod() time.Duration {
-	return p.warmUpPeriod
+	return p.vpd.WarmUpDuration
 }
 
 // Config is the current configuration for ValuePolicy.
@@ -154,7 +151,7 @@ func (p *ValuePolicy) Config() PolicyConfig {
 		"scaleUpValue":   p.vpd.ScaleUpValue,
 		"scaleDownBy":    p.vpd.ScaleDownBy,
 		"scaleDownValue": p.vpd.ScaleDownValue,
-		"warmUpPeriod":   p.warmUpPeriod,
+		"warmUpPeriod":   p.vpd.WarmUpDuration,
 	}
 }
 

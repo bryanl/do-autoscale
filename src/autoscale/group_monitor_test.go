@@ -21,7 +21,7 @@ func TestGroupMonitor(t *testing.T) {
 	ctx := context.Background()
 	repo := &MockRepository{}
 
-	groups := []Group{
+	groups := []*Group{
 		{Name: "g1"},
 		{Name: "g2"},
 	}

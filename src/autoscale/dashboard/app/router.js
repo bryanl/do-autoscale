@@ -7,6 +7,9 @@ const Router = Ember.Router.extend({
 
 Router.map(function() {
   this.route('templates');
+  this.route('groups', function() {
+    this.route('new');
+  });
 });
 
 export default Router;

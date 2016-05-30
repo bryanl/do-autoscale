@@ -41,11 +41,13 @@ func (t *Template) SetID(id string) error {
 	return nil
 }
 
+// SSHKey is a DO ssh key.
 type SSHKey struct {
-	ID          int
-	Fingerprint string
+	ID          int    `json:",omitempty"`
+	Fingerprint string `json:",omitempty"`
 }
 
+// SSHKeys is a slice of DO ssh keys.
 type SSHKeys []SSHKey
 
 // Value converts SSH keys to JSON to be stored in the databases.

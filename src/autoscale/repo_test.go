@@ -154,7 +154,10 @@ func TestCreateGroup(t *testing.T) {
 		metricJSON, err := json.Marshal(&m)
 		require.NoError(t, err)
 
-		vp := defaultValuePolicy
+		vps := ValuePolicyScale(1, 10, 0.8, 2, 0.2, 1)
+		vp, err := NewValuePolicy(vps)
+		require.NoError(t, err)
+
 		vpJSON, err := json.Marshal(&vp)
 		require.NoError(t, err)
 
@@ -165,17 +168,17 @@ func TestCreateGroup(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("abcdefg"))
 		mock.ExpectCommit()
 
-		cgr := CreateGroupRequest{
+		group := Group{
 			Name:         "group",
 			BaseName:     "as",
 			TemplateName: "a-template",
 			MetricType:   "load",
-			Metric:       metricJSON,
+			Metric:       m,
 			PolicyType:   "value",
-			Policy:       vpJSON,
+			Policy:       vp,
 		}
 
-		g, err := repo.CreateGroup(ctx, cgr)
+		g, err := repo.CreateGroup(ctx, group)
 		require.NoError(t, err)
 
 		require.Equal(t, "abcdefg", g.ID)
@@ -184,29 +187,23 @@ func TestCreateGroup(t *testing.T) {
 
 func TestCreateGroup_InvalidName(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
-		policyJSON := []byte(`{
-    "scale_up_value": 0.8,
-    "scale_up_by": 2,
-    "scale_down_value": 0.2,
-    "scale_down_by": 1,
-    "warm_up_duration": "10s"
-  }`)
+		m, err := NewFileLoad()
+		require.NoError(t, err)
 
-		metricJSON := []byte(`{
-    "stats_dir": "/tmp"
-  }`)
+		vps := ValuePolicyScale(1, 10, 0.8, 2, 0.2, 1)
+		vp, err := NewValuePolicy(vps)
 
-		cgr := CreateGroupRequest{
+		group := Group{
 			Name:         "!!!",
 			BaseName:     "as",
 			MetricType:   "load",
-			Metric:       metricJSON,
+			Metric:       m,
 			PolicyType:   "value",
-			Policy:       policyJSON,
+			Policy:       vp,
 			TemplateName: "a-template",
 		}
 
-		_, err := repo.CreateGroup(ctx, cgr)
+		_, err = repo.CreateGroup(ctx, group)
 
 		require.True(t, errors.Is(err, ValidationErr), fmt.Sprintf("received %#v", err))
 

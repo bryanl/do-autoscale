@@ -11,9 +11,6 @@ export default Ember.Route.extend({
 
 
   createTemplate(options) {
-    console.log("creating new template (up top)");
-    console.log(options);
-
     var template = this.store.createRecord('template', options);
     return template.Save();
   },

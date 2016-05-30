@@ -6,13 +6,21 @@ import (
 )
 
 const (
+	// KeyEnv is for the environment key
 	KeyEnv = iota
+	// KeyLog is for the log key
 	KeyLog
+
+	// KeyDOToken is for the do token key
 	KeyDOToken
 )
 
 // LogFromContext extracts a log from a context.Context
 func LogFromContext(ctx context.Context) *logrus.Entry {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	v := ctx.Value(KeyLog)
 
 	switch v.(type) {

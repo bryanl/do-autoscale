@@ -24,9 +24,9 @@ type Repository interface {
 	ListTemplates(ctx context.Context) ([]*Template, error)
 	DeleteTemplate(ctx context.Context, name string) error
 
-	CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error)
-	GetGroup(ctx context.Context, name string) (Group, error)
-	ListGroups(ctx context.Context) ([]Group, error)
+	CreateGroup(ctx context.Context, g Group) (*Group, error)
+	GetGroup(ctx context.Context, name string) (*Group, error)
+	ListGroups(ctx context.Context) ([]*Group, error)
 	DeleteGroup(ctx context.Context, name string) error
 	SaveGroup(ctx context.Context, group Group) error
 
@@ -112,38 +112,33 @@ func (r *pgRepo) DeleteTemplate(ctx context.Context, name string) error {
 	return tx.Commit()
 }
 
-func (r *pgRepo) CreateGroup(ctx context.Context, gcr CreateGroupRequest) (Group, error) {
-	g, err := gcr.ConvertToGroup(ctx)
-	if err != nil {
-		return Group{}, err
-	}
-
+func (r *pgRepo) CreateGroup(ctx context.Context, g Group) (*Group, error) {
 	if !g.IsValid() {
-		return Group{}, errors.New(ValidationErr)
+		return nil, errors.New(ValidationErr)
 	}
 
 	var id string
 
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return Group{}, err
+		return nil, err
 	}
 
 	err = sqlx.Get(tx, &id, sqlCreateGroup,
 		g.Name, g.BaseName, g.TemplateName, g.MetricType, g.Metric, g.PolicyType, g.Policy)
 	if err != nil {
 		tx.Rollback()
-		return Group{}, err
+		return nil, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return Group{}, err
+		return nil, err
 	}
 
 	g.ID = id
 
-	return *g, nil
+	return &g, nil
 }
 
 func (r *pgRepo) SaveGroup(ctx context.Context, g Group) error {
@@ -165,7 +160,7 @@ func (r *pgRepo) SaveGroup(ctx context.Context, g Group) error {
 	return tx.Commit()
 }
 
-func (r *pgRepo) GetGroup(ctx context.Context, name string) (Group, error) {
+func (r *pgRepo) GetGroup(ctx context.Context, name string) (*Group, error) {
 	row := r.db.QueryRowx(sqlGetGroup, name)
 
 	var id, baseName, templateName, metricType, policyType string
@@ -173,10 +168,10 @@ func (r *pgRepo) GetGroup(ctx context.Context, name string) (Group, error) {
 
 	if err := row.Scan(&id, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
 		if err == sql.ErrNoRows {
-			return Group{}, ObjectMissingErr
+			return nil, ObjectMissingErr
 		}
 
-		return Group{}, err
+		return nil, err
 	}
 
 	g := Group{
@@ -189,18 +184,18 @@ func (r *pgRepo) GetGroup(ctx context.Context, name string) (Group, error) {
 	}
 
 	if err := g.LoadPolicy(policy); err != nil {
-		return Group{}, err
+		return nil, err
 	}
 
 	if err := g.LoadMetric(metric); err != nil {
-		return Group{}, err
+		return nil, err
 	}
 
-	return g, nil
+	return &g, nil
 }
 
-func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
-	groups := []Group{}
+func (r *pgRepo) ListGroups(ctx context.Context) ([]*Group, error) {
+	groups := []*Group{}
 
 	rows, err := r.db.Queryx(sqlListGroups)
 	if err != nil {
@@ -234,7 +229,7 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
 			return nil, err
 		}
 
-		groups = append(groups, g)
+		groups = append(groups, &g)
 	}
 
 	return groups, nil

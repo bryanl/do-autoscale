@@ -1,0 +1,43 @@
+{{#bs-form action="submit" model=this}}
+  {{bs-form-element controlType="text" label="name" property="name"}}
+
+  {{bs-form-element controlType="text" label="base droplet name" property="baseName"}}
+
+  {{#bs-form-element label="template" property="template" as |value id|}}
+      {{select-2
+          id=id
+          didSelect="onTemplateChanged"
+          placeholder="Choose a template"
+          content=groupConfig.templates
+          optionValuePath="name"
+          optionLabelPath="name"
+          value=value}}
+  {{/bs-form-element}}
+
+  {{#if currentTemplate}}
+    <div class="row template">
+      <div class="col-md-12">
+        {{template-summary template=currentTemplate}}
+      </div>
+    </div>
+  {{/if}}
+
+  {{#bs-form-element label="metric type" property="metricType" as |value id|}}
+    {{#x-select value=value class="form-control" action=(action "onMetricTypeChanged")}}
+      {{#each groupConfig.metrics as |item|}}
+        {{#x-option value=item}}{{item}}{{/x-option}}
+      {{/each}}
+    {{/x-select}}
+  {{/bs-form-element}}
+
+  {{#bs-form-element label="policy type" property="policyType" as |value id|}}
+    {{#x-select value=value class="form-control" action=(action "onPolicyTypeChanged")}}
+      {{#each groupConfig.policies as |item|}}
+        {{#x-option value=item}}{{item}}{{/x-option}}
+      {{/each}}
+    {{/x-select}}
+  {{/bs-form-element}}
+
+  {{bs-button defaultText="Submit" type="primary" buttonType="submit"}}
+
+{{/bs-form}}

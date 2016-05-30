@@ -115,7 +115,7 @@ func (w *Watcher) Watch() (chan bool, error) {
 					continue
 				}
 
-				go w.queueCheck(w.ctx, g)
+				go w.queueCheck(w.ctx, *g)
 
 			case <-w.quitChan:
 				log.Info("watcher is shutting down")

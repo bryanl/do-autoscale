@@ -1,7 +1,7 @@
 # *NOTICE*
 
 - Master branch, website and godoc now points to Echo v2.
-- Echo v2 is in beta but if you want to try it out here is the migrating [guide] (https://labstack.com/echo/guide/migrating)
+- Echo v2 is in beta but if you want to try it out here is the migrating [guide] (https://echo.labstack.com/guide/migrating)
 - Looking for v1?
 	- Installation: Use a package manager (https://github.com/Masterminds/glide, it's nice!) to get stable v1 release/commit or use `go get gopkg.in/labstack/echo.v1`.
 	- Godoc: https://godoc.org/gopkg.in/labstack/echo.v1
@@ -198,9 +198,9 @@ Server any file from static directory for path `/static/*`.
 e.Static("/static", "static")
 ```
 
-##### [More...](https://labstack.com/echo/guide/static-files)
+##### [More...](https://echo.labstack.com/guide/static-files)
 
-### [Template Rendering](https://labstack.com/echo/guide/templates)
+### [Template Rendering](https://echo.labstack.com/guide/templates)
 
 ### Middleware
 
@@ -234,21 +234,21 @@ e.GET("/users", func(c echo.Context) error {
 
 Middleware | Description
 :--- | :---
-[BodyLimit](https://labstack.com/echo/guide/body-limit-middleware) | Limit request body
-[Logger](https://labstack.com/echo/guide/logger-middleware) | Log HTTP requests
-[Recover](https://labstack.com/echo/guide/recover-middleware) | Recover from panics
-[Gzip](https://labstack.com/echo/guide/gzip-middleware) | Send gzip HTTP response
-[BasicAuth](https://labstack.com/echo/guide/basic-auth-middleware) | HTTP basic authentication
-[JWTAuth](https://labstack.com/echo/guide/jwt-middleware) | JWT authentication
-[Secure](https://labstack.com/echo/guide/secure-middleware) | Protection against attacks
-[CORS](https://labstack.com/echo/guide/cors-middleware) | Cross-Origin Resource Sharing
-[CSRF](https://labstack.com/echo/guide/csrf-middleware) | Cross-Site Request Forgery
-[Static](https://labstack.com/echo/guide/static-middleware) | Serve static files
-[AddTrailingSlash](https://labstack.com/echo/guide/add-trailing-slash-middleware) | Add trailing slash to the request URI
-[RemoveTrailingSlash](https://labstack.com/echo/guide/remove-trailing-slash-middleware) | Remove trailing slash from the request URI
-[MethodOverride](https://labstack.com/echo/guide/method-override-middleware) | Override request method
+[BodyLimit](https://echo.labstack.com/middleware/body-limit) | Limit request body
+[Logger](https://echo.labstack.com/middleware/logger) | Log HTTP requests
+[Recover](https://echo.labstack.com/middleware/recover) | Recover from panics
+[Gzip](https://echo.labstack.com/middleware/gzip) | Send gzip HTTP response
+[BasicAuth](https://echo.labstack.com/middleware/basic-auth) | HTTP basic authentication
+[JWTAuth](https://echo.labstack.com/middleware/jwt) | JWT authentication
+[Secure](https://echo.labstack.com/middleware/secure) | Protection against attacks
+[CORS](https://echo.labstack.com/middleware/cors) | Cross-Origin Resource Sharing
+[CSRF](https://echo.labstack.com/middleware/csrf) | Cross-Site Request Forgery
+[Static](https://echo.labstack.com/middleware/static) | Serve static files
+[AddTrailingSlash](https://echo.labstack.com/middleware/add-trailing-slash) | Add trailing slash to the request URI
+[RemoveTrailingSlash](https://echo.labstack.com/middleware/remove-trailing-slash) | Remove trailing slash from the request URI
+[MethodOverride](https://echo.labstack.com/middleware/method-override) | Override request method
 
-##### [More...](https://labstack.com/echo/guide/middleware)
+##### [More...](https://echo.labstack.com/middleware)
 
 #### Third-party Middleware
 
@@ -258,8 +258,8 @@ Middleware | Description
 
 ### Next
 
-- Head over to [guide](https://labstack.com/echo/guide/installation)
-- Browse [recipes](https://labstack.com/echo/recipes/hello-world)
+- Head over to [guide](https://echo.labstack.com/guide/installation)
+- Browse [recipes](https://echo.labstack.com/recipes/hello-world)
 
 ### Need help?
 

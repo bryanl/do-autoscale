@@ -20,7 +20,12 @@ type (
 		// Optional. Default value "index.html".
 		Index string `json:"index"`
 
-		// Enable/disable directory browsing.
+		// Enable HTML5 mode by forwarding all not-found requests to root so that
+		// SPA (single-page application) can handle the routing.
+		// Optional. Default value false.
+		HTML5 bool `json:"html5"`
+
+		// Enable directory browsing.
 		// Optional. Default value false.
 		Browse bool `json:"browse"`
 	}
@@ -29,8 +34,7 @@ type (
 var (
 	// DefaultStaticConfig is the default static middleware config.
 	DefaultStaticConfig = StaticConfig{
-		Index:  "index.html",
-		Browse: false,
+		Index: "index.html",
 	}
 )
 
@@ -60,7 +64,18 @@ func StaticWithConfig(config StaticConfig) echo.MiddlewareFunc {
 			file := path.Clean(p)
 			f, err := fs.Open(file)
 			if err != nil {
-				return next(c)
+				// HTML5 mode
+				err = next(c)
+				if he, ok := err.(*echo.HTTPError); ok {
+					if config.HTML5 && he.Code == http.StatusNotFound {
+						file = ""
+						f, err = fs.Open(file)
+					} else {
+						return err
+					}
+				} else {
+					return err
+				}
 			}
 			defer f.Close()
 			fi, err := f.Stat()
