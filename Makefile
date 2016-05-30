@@ -3,6 +3,9 @@
 build-app:
 	docker-compose build app
 
+test:
+	@gb test
+
 start-app: build-app
 	docker-compose up -d app
 
