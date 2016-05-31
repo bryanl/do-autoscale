@@ -4,7 +4,6 @@ import (
 	"autoscale"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -77,13 +76,8 @@ func TestListTemplates(t *testing.T) {
 
 		require.Equal(t, 200, res.StatusCode)
 
-		j, err := ioutil.ReadAll(res.Body)
-		require.NoError(t, err)
-
-		fmt.Println(string(j))
-
 		var templates []autoscale.Template
-		err = jsonapi.Unmarshal(j, &templates)
+		err = json.NewDecoder(res.Body).Decode(&templates)
 		require.NoError(t, err)
 
 		require.Len(t, templates, 2)
@@ -123,11 +117,8 @@ func TestGetTemplate(t *testing.T) {
 
 		require.Equal(t, 200, res.StatusCode)
 
-		j, err := ioutil.ReadAll(res.Body)
-		require.NoError(t, err)
-
 		var tmpl autoscale.Template
-		err = jsonapi.Unmarshal(j, &tmpl)
+		err = json.NewDecoder(res.Body).Decode(&tmpl)
 		require.NoError(t, err)
 
 		require.Equal(t, "1", tmpl.ID)
@@ -138,7 +129,7 @@ func TestGetTemplate(t *testing.T) {
 func TestGetMissingTemplate(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		resp := newResponse(nil, 404)
-		mocks.templateResource.On("FindOne", ctx, "1").Return(resp, nil)
+		mocks.templateResource.On("FindOne", mock.Anything, "1").Return(resp, nil)
 
 		u.Path = "/api/templates/1"
 
@@ -176,8 +167,8 @@ func TestCreateTemplate(t *testing.T) {
 			UserData: "#userdata",
 		}
 
-		resp := newResponse(tmpl, 200)
-		mocks.templateResource.On("Create", ctx, newTmpl).Return(resp, nil)
+		resp := newResponse(tmpl, 201)
+		mocks.templateResource.On("Create", mock.Anything, newTmpl).Return(resp, nil)
 
 		u.Path = "/api/templates"
 
@@ -187,8 +178,8 @@ func TestCreateTemplate(t *testing.T) {
       "region": "dev0",
       "size": "512mb",
       "image": "ubuntu-14-04-x64",
-      "ssh_keys": ["123", "456", "789"],
-      "user_data": "#userdata"
+      "sshKeys": [{"id":123}, {"id":456}, {"id":789}],
+      "userData": "#userdata"
     }
   }`)
 
@@ -218,7 +209,7 @@ func TestListGroups(t *testing.T) {
 		}
 
 		resp := newResponse(ogGroups, 200)
-		mocks.groupResource.On("FindAll", ctx).Return(resp, nil)
+		mocks.groupResource.On("FindAll", mock.Anything).Return(resp, nil)
 
 		u.Path = "/api/groups"
 
@@ -234,7 +225,7 @@ func TestListGroups(t *testing.T) {
 func TestDeleteGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		resp := newResponse(nil, 204)
-		mocks.templateResource.On("Delete", ctx, "abc").Return(resp, nil)
+		mocks.groupResource.On("Delete", mock.Anything, "abc").Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
@@ -251,14 +242,27 @@ func TestDeleteGroup(t *testing.T) {
 
 func TestUpdateGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
-		ogGroup := autoscale.Group{ID: "abc"}
+		ogGroup := autoscale.Group{
+			ID:         "abc",
+			MetricType: "load",
+			PolicyType: "value",
+		}
 
-		resp := newResponse(ogGroup, 200)
-		mocks.groupResource.On("Update", ctx, ogGroup).Return(resp, nil)
+		resp := newResponse(&ogGroup, 200)
+		mocks.groupResource.On("Update", mock.Anything, mock.AnythingOfType("autoscale.Group")).Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
-		j := `{"base_size": 6}`
+		j := `
+    {
+      "group": {
+        "policy": {
+          "scale_up_value": 6
+        },
+        "metricType": "load",
+        "policyType": "value"
+      }
+    }`
 
 		var buf bytes.Buffer
 		_, err := buf.WriteString(j)
@@ -266,6 +270,8 @@ func TestUpdateGroup(t *testing.T) {
 
 		req, err := http.NewRequest("PUT", u.String(), &buf)
 		require.NoError(t, err)
+
+		req.Header.Add("Content-Type", "application/json")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -278,8 +284,8 @@ func TestGetGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		ogGroup := autoscale.Group{ID: "abc"}
 
-		resp := newResponse(ogGroup, 200)
-		mocks.groupResource.On("FindOne", ctx, "abc").Return(resp, nil)
+		resp := newResponse(&ogGroup, 200)
+		mocks.groupResource.On("FindOne", mock.Anything, "abc").Return(resp, nil)
 
 		u.Path = "/api/groups/abc"
 
@@ -300,7 +306,7 @@ func TestGetGroup(t *testing.T) {
 func TestGetMissingGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		resp := newResponse(nil, 404)
-		mocks.templateResource.On("FindOne", ctx, "1").Return(resp, nil)
+		mocks.templateResource.On("FindOne", mock.Anything, "1").Return(resp, nil)
 
 		u.Path = "/api/groups/1"
 
@@ -333,7 +339,7 @@ func TestCreateGroup(t *testing.T) {
 		}
 
 		resp := newResponse(newGroup, 201)
-		mocks.groupResource.On("Create", ctx, group).Return(resp, nil)
+		mocks.groupResource.On("Create", mock.Anything, group).Return(resp, nil)
 
 		u.Path = "/api/groups"
 

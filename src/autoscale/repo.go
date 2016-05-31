@@ -26,7 +26,7 @@ type Repository interface {
 
 	CreateGroup(ctx context.Context, g Group) (*Group, error)
 	GetGroup(ctx context.Context, name string) (*Group, error)
-	ListGroups(ctx context.Context) ([]*Group, error)
+	ListGroups(ctx context.Context) ([]Group, error)
 	DeleteGroup(ctx context.Context, name string) error
 	SaveGroup(ctx context.Context, group Group) error
 
@@ -194,8 +194,8 @@ func (r *pgRepo) GetGroup(ctx context.Context, name string) (*Group, error) {
 	return &g, nil
 }
 
-func (r *pgRepo) ListGroups(ctx context.Context) ([]*Group, error) {
-	groups := []*Group{}
+func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
+	groups := []Group{}
 
 	rows, err := r.db.Queryx(sqlListGroups)
 	if err != nil {
@@ -229,7 +229,7 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]*Group, error) {
 			return nil, err
 		}
 
-		groups = append(groups, &g)
+		groups = append(groups, g)
 	}
 
 	return groups, nil

@@ -44,6 +44,30 @@ func (r *response) StatusCode() int {
 	return r.statusCode
 }
 
+type templateWrapper struct {
+	Template autoscale.Template `json:"template"`
+}
+
+type templatesWrapper struct {
+	Templates []autoscale.Template `json:"templates"`
+}
+
+type groupWrapper struct {
+	Group autoscale.Group `json:"group"`
+}
+
+type groupsWrapper struct {
+	Groups []autoscale.Group `json:"groups"`
+}
+
+type userConfigWrapper struct {
+	UserConfig autoscale.UserConfig `json:"userConfigs"`
+}
+
+type groupConfigWrapper struct {
+	GroupConfig autoscale.GroupConfig `json:"groupConfigs"`
+}
+
 type templateResource struct {
 	repo autoscale.Repository
 }
@@ -60,7 +84,7 @@ func (r *templateResource) FindOne(c context.Context, id string) (Response, erro
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(template, http.StatusOK), nil
+	return newResponse(templateWrapper{Template: *template}, http.StatusOK), nil
 }
 
 func (r *templateResource) Create(c context.Context, obj interface{}) (Response, error) {
@@ -74,7 +98,7 @@ func (r *templateResource) Create(c context.Context, obj interface{}) (Response,
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(template, http.StatusCreated), nil
+	return newResponse(templateWrapper{Template: *template}, http.StatusCreated), nil
 }
 
 func (r *templateResource) Delete(c context.Context, id string) (Response, error) {
@@ -95,12 +119,7 @@ func (r *templateResource) FindAll(c context.Context) (Response, error) {
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	newTemplates := []*autoscale.Template{}
-	for i := range templates {
-		newTemplates = append(newTemplates, &templates[i])
-	}
-
-	return newResponse(newTemplates, http.StatusOK), nil
+	return newResponse(templatesWrapper{Templates: templates}, http.StatusOK), nil
 }
 
 type groupResource struct {
@@ -119,7 +138,7 @@ func (r *groupResource) FindOne(c context.Context, id string) (Response, error) 
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(group, http.StatusOK), nil
+	return newResponse(groupWrapper{Group: *group}, http.StatusOK), nil
 }
 
 func (r *groupResource) Create(c context.Context, obj interface{}) (Response, error) {
@@ -133,7 +152,7 @@ func (r *groupResource) Create(c context.Context, obj interface{}) (Response, er
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(group, http.StatusCreated), nil
+	return newResponse(groupWrapper{Group: *group}, http.StatusCreated), nil
 }
 
 func (r *groupResource) Delete(c context.Context, id string) (Response, error) {
@@ -155,7 +174,7 @@ func (r *groupResource) Update(c context.Context, obj interface{}) (Response, er
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(&in, http.StatusCreated), nil
+	return newResponse(groupWrapper{Group: in}, http.StatusCreated), nil
 }
 
 func (r *groupResource) FindAll(c context.Context) (Response, error) {
@@ -164,7 +183,7 @@ func (r *groupResource) FindAll(c context.Context) (Response, error) {
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(groups, http.StatusOK), nil
+	return newResponse(groupsWrapper{Groups: groups}, http.StatusOK), nil
 }
 
 type userConfigResource struct {
@@ -195,7 +214,7 @@ func (r *userConfigResource) FindAll(c context.Context) (Response, error) {
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(uc, http.StatusOK), nil
+	return newResponse(userConfigWrapper{UserConfig: *uc}, http.StatusOK), nil
 }
 
 type groupConfigResource struct {
@@ -227,5 +246,5 @@ func (r *groupConfigResource) FindAll(c context.Context) (Response, error) {
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(gc, http.StatusOK), nil
+	return newResponse(groupConfigWrapper{GroupConfig: *gc}, http.StatusOK), nil
 }

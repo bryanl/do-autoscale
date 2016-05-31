@@ -1,7 +1,31 @@
-{{#each models.groups as |group|}}
-  <div class="row template">
-    <div class="col-md-12">
-      {{ group-summary group=group}}
-    </div>
-  </div>
-{{/each}}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Template</th>
+      <th>Metric Type</th>
+      <th>Policy Type</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {{#each models.groups as |group|}}
+      <tr>
+        <td>{{group.name}}</td>
+        <td>{{group.templateName}}</td>
+        <td>{{group.metricType}}</td>
+        <td>{{group.policyType}}</td>
+        <td>
+          {{#bs-dropdown}}
+            {{#bs-dropdown-toggle}}
+              <span class="caret"></span>
+            {{/bs-dropdown-toggle}}
+            {{#bs-dropdown-menu}}
+              <li><a href="#">Delete</a></li>
+            {{/bs-dropdown-menu}}
+          {{/bs-dropdown}}
+        </td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>

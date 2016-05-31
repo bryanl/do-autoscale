@@ -9,8 +9,8 @@ export default Ember.Route.extend({
 
   actions: {
     createGroup(options) {
-     var template = this.store.createRecord('group', options);
-      return template.save();
+     var group = this.store.createRecord('group', options);
+      return group.save();
     }
   }
 

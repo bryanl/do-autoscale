@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/manyminds/api2go/jsonapi"
 )
 
 var (
@@ -55,67 +54,45 @@ type UpdateGroupRequest struct {
 
 // Group is an autoscale group
 type Group struct {
-	ID           string          `json:"ID" db:"id"`
+	ID           string          `json:"id" db:"id"`
 	Name         string          `json:"name" db:"name"`
-	BaseName     string          `json:"base-name" db:"base_name"`
-	TemplateName string          `json:"template_name" db:"template_name"`
-	MetricType   string          `json:"metric-type" db:"metric_type"`
+	BaseName     string          `json:"baseName" db:"base_name"`
+	TemplateName string          `json:"templateName" db:"template_name"`
+	MetricType   string          `json:"metricType" db:"metric_type"`
 	Metric       Metrics         `json:"metric"`
-	RawMetric    json.RawMessage `json:"raw-metric" db:"metric"`
-	PolicyType   string          `json:"policy-type" db:"policy_type"`
+	RawMetric    json.RawMessage `json:"rawMetric" db:"metric"`
+	PolicyType   string          `json:"policyType" db:"policy_type"`
 	Policy       Policy          `json:"policy" `
-	RawPolicy    json.RawMessage `json:"raw-policy" db:"policy"`
+	RawPolicy    json.RawMessage `json:"rawPolicy" db:"policy"`
 }
 
-var _ jsonapi.MarshalIdentifier = (*Group)(nil)
-var _ jsonapi.UnmarshalIdentifier = (*Group)(nil)
 var _ json.Marshaler = (*Group)(nil)
 var _ json.Unmarshaler = (*Group)(nil)
 
-// GetID gets the ID for a group.
-func (g *Group) GetID() string {
-	return g.ID
-}
-
-// SetID sets the ID for a group.
-func (g *Group) SetID(id string) error {
-	g.ID = id
-	return nil
-}
-
 type groupToJSON struct {
-	ID           string          `json:"ID"`
+	ID           string          `json:"id"`
 	Name         string          `json:"name"`
-	BaseName     string          `json:"base-name"`
-	TemplateName string          `json:"template-name"`
-	MetricType   string          `json:"metric-type"`
+	BaseName     string          `json:"baseName"`
+	TemplateName string          `json:"templateName"`
+	MetricType   string          `json:"metricType"`
 	Metric       json.RawMessage `json:"metric"`
-	PolicyType   string          `json:"policy-type"`
+	PolicyType   string          `json:"policyType"`
 	Policy       json.RawMessage `json:"policy"`
 }
 
 type jsonToGroup struct {
-	ID           string          `json:"ID"`
+	ID           string          `json:"id"`
 	Name         string          `json:"name"`
-	BaseName     string          `json:"base-name"`
-	TemplateName string          `json:"template-name"`
-	MetricType   string          `json:"metric-type"`
+	BaseName     string          `json:"baseName"`
+	TemplateName string          `json:"templateName"`
+	MetricType   string          `json:"metricType"`
 	Metric       json.RawMessage `json:"metric"`
-	PolicyType   string          `json:"policy-type"`
+	PolicyType   string          `json:"policyType"`
 	Policy       json.RawMessage `json:"policy"`
 }
 
 // MarshalJSON marshals a Group into json.
 func (g *Group) MarshalJSON() ([]byte, error) {
-	m, err := json.Marshal(g.Metric)
-	if err != nil {
-		return nil, err
-	}
-
-	p, err := json.Marshal(g.Policy)
-	if err != nil {
-		return nil, err
-	}
 
 	tmp := groupToJSON{
 		ID:           g.ID,
@@ -123,9 +100,25 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 		BaseName:     g.BaseName,
 		TemplateName: g.TemplateName,
 		MetricType:   g.MetricType,
-		Metric:       m,
 		PolicyType:   g.PolicyType,
-		Policy:       p,
+	}
+
+	if g.Metric != nil {
+		m, err := json.Marshal(g.Metric)
+		if err != nil {
+			return nil, err
+		}
+
+		tmp.Metric = m
+	}
+
+	if g.Policy != nil {
+		p, err := json.Marshal(g.Policy)
+		if err != nil {
+			return nil, err
+		}
+
+		tmp.Policy = p
 	}
 
 	return json.Marshal(&tmp)

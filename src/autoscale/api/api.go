@@ -2,7 +2,7 @@ package api
 
 import (
 	"autoscale/gen"
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"pkg/ctxutil"
 	"pkg/echologger"
@@ -18,9 +18,18 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
-	"github.com/manyminds/api2go/jsonapi"
 	"github.com/satori/go.uuid"
 )
+
+type errorWrapper struct {
+	Errors errorMsg `json:"errors"`
+}
+
+type errorMsg struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	Detail string `json:"detail"`
+}
 
 func errorHandler(err error, c echo.Context) {
 	log := ctxutil.LogFromContext(c.NetContext())
@@ -42,19 +51,17 @@ func errorHandler(err error, c echo.Context) {
 		ctype := req.Header().Get(echo.HeaderContentType)
 
 		switch {
-		case strings.HasPrefix(ctype, MIMEApplicationJSONAPI):
-			apiErrs := jsonAPIErrors{
-				{
+		case strings.HasPrefix(ctype, echo.MIMEApplicationJSON):
+			apiError := errorWrapper{
+				Errors: errorMsg{
 					ID:     reqID,
 					Status: strconv.Itoa(code),
 					Detail: msg,
 				},
 			}
 
-			if b, err := jsonapi.Marshal(apiErrs); err == nil {
-				c.JSONBlob(code, b)
-			} else {
-				log.WithError(err).Error("unable to create error response")
+			if err := c.JSON(code, apiError); err == nil {
+				log.WithError(err).Error("uaable to create api error mesage")
 			}
 
 		default:
@@ -80,9 +87,6 @@ type API struct {
 // New creates an instance of API.
 func New(ctx context.Context, repo autoscale.Repository) *API {
 	e := echo.New()
-
-	jb := &jsonAPIBinder{}
-	e.SetBinder(jb)
 
 	std := standard.WithConfig(engine.Config{})
 	std.SetHandler(e)
@@ -117,6 +121,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 
 			}
 
+			// NOTE this causes a stack issue
 			// newCtx := context.WithValue(c, "RequestID", reqID)
 			// newCtx = context.WithValue(newCtx, "log", log)
 			// c.SetNetContext(newCtx)
@@ -143,8 +148,8 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Post("/groups", a.createGroup)
 	g.Delete("/groups/:id", a.deleteGroup)
 	g.Put("/groups/:id", a.updateGroup)
-	g.Get("/user-configs", a.userConfig)
-	g.Get("/group-configs", a.groupConfig)
+	g.Get("/user_config", a.userConfig)
+	g.Get("/group_configs", a.groupConfig)
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -180,11 +185,8 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	return a
 }
 
-func jsonAPIResponse(c echo.Context, resp Response) error {
-	result := resp.Result()
-	fmt.Printf("result type: %T, %#v", result, result)
-
-	j, err := jsonapi.Marshal(resp.Result())
+func buildResponse(c echo.Context, resp Response) error {
+	j, err := json.Marshal(resp.Result())
 	if err != nil {
 		return err
 	}
@@ -198,7 +200,7 @@ func (a *API) listTemplates(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) getTemplate(c echo.Context) error {
@@ -208,21 +210,21 @@ func (a *API) getTemplate(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) createTemplate(c echo.Context) error {
-	var tmpl autoscale.Template
-	if err := c.Bind(&tmpl); err != nil {
+	var wrapper templateWrapper
+	if err := c.Bind(&wrapper); err != nil {
 		return err
 	}
 
-	resp, err := a.templateResourceFactory().Create(c, tmpl)
+	resp, err := a.templateResourceFactory().Create(c, wrapper.Template)
 	if err != nil {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) deleteTemplate(c echo.Context) error {
@@ -232,7 +234,7 @@ func (a *API) deleteTemplate(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) listGroups(c echo.Context) error {
@@ -241,7 +243,7 @@ func (a *API) listGroups(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) getGroup(c echo.Context) error {
@@ -251,23 +253,23 @@ func (a *API) getGroup(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 
 }
 
 func (a *API) createGroup(c echo.Context) error {
-	var group autoscale.Group
-	if err := c.Bind(&group); err != nil {
+	var wrapper groupWrapper
+	if err := c.Bind(&wrapper); err != nil {
 		return err
 	}
 
-	resp, err := a.groupResourceFactory().Create(c, group)
+	resp, err := a.groupResourceFactory().Create(c, wrapper.Group)
 
 	if err != nil {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) deleteGroup(c echo.Context) error {
@@ -277,23 +279,27 @@ func (a *API) deleteGroup(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 
 }
 
 func (a *API) updateGroup(c echo.Context) error {
-	var group autoscale.Group
-	if err := c.Bind(&group); err != nil {
+	id := c.Param("id")
+	var wrapper groupWrapper
+	if err := c.Bind(&wrapper); err != nil {
 		return err
 	}
 
-	resp, err := a.groupResourceFactory().Update(c, group)
+	g := wrapper.Group
+	g.ID = id
+
+	resp, err := a.groupResourceFactory().Update(c, g)
 
 	if err != nil {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) userConfig(c echo.Context) error {
@@ -302,7 +308,7 @@ func (a *API) userConfig(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }
 
 func (a *API) groupConfig(c echo.Context) error {
@@ -311,5 +317,5 @@ func (a *API) groupConfig(c echo.Context) error {
 		return err
 	}
 
-	return jsonAPIResponse(c, resp)
+	return buildResponse(c, resp)
 }

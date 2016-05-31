@@ -31,7 +31,7 @@ export default Ember.Component.extend({
       var createRequest = {
         name: this.name,
         baseName: this.baseName,
-        templateName: this.template.get("name"),
+        templateName: this.template.name,
         metricType: this.metricType,
         metric: this.metric,
         policyType: this.policyType,
@@ -40,10 +40,10 @@ export default Ember.Component.extend({
 
       console.log(createRequest);
 
-      // const promise = this.get("onCreate")(createRequest);
-      // promise.then(() => {
-      //   console.log("group created");
-      // });
+      const promise = this.get("onCreate")(createRequest);
+      promise.then(() => {
+        console.log("group created");
+      });
     }
   }
 });

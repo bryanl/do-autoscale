@@ -6,14 +6,24 @@
   </div>
 </div>
 
-
-{{#each models.templates as |template|}}
-  <div class="row template">
-    <div class="col-md-12">
-      {{template-summary template=template}}
-    </div>
-  </div>
-{{/each}}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Region</th>
+      <th>Size</th>
+      <th>Image</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each models.templates as |template|}}
+      <tr>
+        <td>{{template.region}}</td>
+        <td>{{template.size}}</td>
+        <td>{{template.image}}</td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
 
 {{template-create
     show=showCreateForm

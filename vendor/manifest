@@ -114,12 +114,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/gorilla/mux",
-			"repository": "https://github.com/gorilla/mux",
-			"revision": "9c19ed558d5df4da88e2ade9c8940d742aef0e7e",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/hailocab/go-hostpool",
 			"repository": "https://github.com/hailocab/go-hostpool",
 			"revision": "e80d13ce29ede4452c43dea11e79b9bc8a15b478",
@@ -346,13 +340,6 @@
 			"revision": "96dbb961a39ddccf16860cdd355bfa639c497f23",
 			"branch": "master",
 			"path": "/context"
-		},
-		{
-			"importpath": "golang.org/x/net/dict",
-			"repository": "https://go.googlesource.com/net",
-			"revision": "0c607074acd38c5f23d1344dfe74c977464d1257",
-			"branch": "master",
-			"path": "/dict"
 		},
 		{
 			"importpath": "golang.org/x/net/netutil",
