@@ -9,6 +9,7 @@ Router.map(function() {
   this.route('templates');
   this.route('groups', function() {
     this.route('new');
+    this.route('show', { path: '/:group_id'});
     this.route('delete', { path: '/:group_id/delete'});
   });
 });

@@ -11,7 +11,11 @@
   <tbody>
     {{#each models.groups as |group|}}
       <tr>
-        <td>{{group.name}}</td>
+        <td>
+          {{#link-to "groups.show" group}}
+            {{ group.name }}
+          {{/link-to}}
+       </td>
         <td>{{group.templateName}}</td>
         <td>{{group.metricType}}</td>
         <td>{{group.policyType}}</td>

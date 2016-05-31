@@ -1,0 +1,12 @@
+<ul class="nav nav-pills nav-stacked">
+  {{#active-link}}
+    {{#link-to 'groups.show' model}}
+      Status
+    {{/link-to}}
+  {{/active-link}}
+  {{#active-link}}
+    {{#link-to 'groups.delete' model}}
+      Delete
+    {{/link-to}}
+  {{/active-link}}
+</ul>

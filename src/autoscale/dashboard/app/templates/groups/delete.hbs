@@ -1,23 +1,27 @@
-<div class="panel panel-default">
-  <div class="panel-body">
-    <div class="row">
-      <div class="col-md-4">
-        <h3>Delete Group {{ group.name}}</h3>
-      </div>
-    </div>
+{{#group-wrapper model=model}}
 
-    <div class="row">
-      <div class="col-md-4">
-        Deleting a group is not reversible.
+  <div class="panel panel-default">
+    <div class="panel-body">
+      <div class="row">
+        <div class="col-md-4">
+          <h3>Delete Group {{ group.name}}</h3>
+        </div>
       </div>
-    </div>
 
-    <div class="row">
-      <div class="col-md-4">
-        {{#bs-button type="danger" icon="glyphicon glyphicon-trash" action='deleteGroup'}}
-          Delete
-        {{/bs-button}}
+      <div class="row">
+        <div class="col-md-4">
+          Deleting a group is not reversible.
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          {{#bs-button type="danger" icon="glyphicon glyphicon-trash" action='deleteGroup'}}
+            Delete
+          {{/bs-button}}
+        </div>
       </div>
     </div>
   </div>
-</div>
+
+{{/group-wrapper}}
