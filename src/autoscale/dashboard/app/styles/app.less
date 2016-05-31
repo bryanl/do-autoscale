@@ -1,3 +1,5 @@
+@import "../../bower_components/bootstrap/less/bootstrap.less";
+
 .dashboard-content {
 	padding-top: 25px;
 }
@@ -7,6 +9,7 @@
   margin-bottom: @size;
 }
 
-.template {
-  .with-margin();
-}
+.margin-bottom-xs {margin-bottom: ceil(@line-height-computed / 4);}
+.margin-bottom-sm {margin-bottom: ceil(@line-height-computed / 2);}
+.margin-bottom-md {margin-bottom: @line-height-computed;}
+.margin-bottom-lg {margin-bottom: ceil(@line-height-computed * 2);}

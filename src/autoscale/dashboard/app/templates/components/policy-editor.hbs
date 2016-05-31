@@ -1,0 +1,18 @@
+<fieldset>
+  <legend>Policy Options for {{policyType}}</legend>
+
+  {{bs-form-element controlType="number" label="Minimum group size" property="policy.min_size"}}
+
+  {{bs-form-element controlType="number" label="Maximum group size" property="policy.max_size"}}
+
+  {{bs-form-element controlType="text" label="Scale up when load is over" property="policy.scale_up_value"}}
+
+  {{bs-form-element controlType="number" label="Scale up by" property="policy.scale_up_by"}}
+
+  {{bs-form-element controlType="text" label="Scale down when load is under" property="policy.scale_down_value"}}
+
+  {{bs-form-element controlType="number" label="Scale down by" property="policy.scale_down_by"}}
+
+  {{bs-form-element controlType="text" label="Warm up duration" property="policy.warm_up_duration"}}
+</fieldset>
+

@@ -13,7 +13,7 @@ export default Ember.Component.extend({
     max_size: 10,
     scale_up_value: 0.8,
     scale_down_value: 0.2,
-    scale_up_b: 2,
+    scale_up_by: 2,
     scale_down_by: 1,
     warm_up_duration: "10s"
   },
