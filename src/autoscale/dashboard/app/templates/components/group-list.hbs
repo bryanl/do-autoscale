@@ -21,7 +21,11 @@
               <span class="caret"></span>
             {{/bs-dropdown-toggle}}
             {{#bs-dropdown-menu}}
-              <li><a href="#">Delete</a></li>
+              <li>
+                {{#link-to "groups.delete" group}}
+                  Delete
+                {{/link-to}}
+                </li>
             {{/bs-dropdown-menu}}
           {{/bs-dropdown}}
         </td>

@@ -75,9 +75,9 @@ func (r *pgRepo) CreateTemplate(ctx context.Context, t Template) (*Template, err
 	return &t, nil
 }
 
-func (r *pgRepo) GetTemplate(ctx context.Context, name string) (*Template, error) {
+func (r *pgRepo) GetTemplate(ctx context.Context, id string) (*Template, error) {
 	var t Template
-	if err := r.db.Get(&t, sqlGetTemplate, name); err != nil {
+	if err := r.db.Get(&t, sqlGetTemplate, id); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ObjectMissingErr
 		}
@@ -97,13 +97,13 @@ func (r *pgRepo) ListTemplates(ctx context.Context) ([]Template, error) {
 	return ts, nil
 }
 
-func (r *pgRepo) DeleteTemplate(ctx context.Context, name string) error {
+func (r *pgRepo) DeleteTemplate(ctx context.Context, id string) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(sqlDeleteTemplate, name)
+	_, err = tx.Exec(sqlDeleteTemplate, id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -160,13 +160,13 @@ func (r *pgRepo) SaveGroup(ctx context.Context, g Group) error {
 	return tx.Commit()
 }
 
-func (r *pgRepo) GetGroup(ctx context.Context, name string) (*Group, error) {
-	row := r.db.QueryRowx(sqlGetGroup, name)
+func (r *pgRepo) GetGroup(ctx context.Context, id string) (*Group, error) {
+	row := r.db.QueryRowx(sqlGetGroup, id)
 
-	var id, baseName, templateName, metricType, policyType string
+	var name, baseName, templateName, metricType, policyType string
 	var metric, policy interface{}
 
-	if err := row.Scan(&id, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
+	if err := row.Scan(&name, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ObjectMissingErr
 		}
@@ -235,13 +235,13 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
 	return groups, nil
 }
 
-func (r *pgRepo) DeleteGroup(ctx context.Context, name string) error {
+func (r *pgRepo) DeleteGroup(ctx context.Context, id string) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(sqlDeleteGroup, name)
+	_, err = tx.Exec(sqlDeleteGroup, id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -262,7 +262,7 @@ var (
   RETURNING id`
 
 	sqlGetTemplate = `
-  SELECT * from templates where name=$1`
+  SELECT * from templates where id=$1`
 
 	sqlListTemplates = `
   SELECT * from templates`
@@ -277,15 +277,15 @@ var (
   RETURNING id`
 
 	sqlGetGroup = `
-  SELECT id, base_name, template_name, metric_type, metric, policy_type, policy from groups where name=$1`
+  SELECT name, base_name, template_name, metric_type, metric, policy_type, policy from groups where id=$1`
 
 	sqlListGroups = `
   SELECT id, name, base_name, template_name, metric_type, metric, policy_type, policy from groups`
 
 	sqlDeleteGroup = `
-  DELETE from groups WHERE name = $1`
+  DELETE from groups WHERE id = $1`
 
 	// TODO figure out what we update
 	sqlUpdateGroup = `
-  UPDATE groups set metrics = $1, policy = $2 WHERE name = $3`
+  UPDATE groups set metrics = $1, policy = $2 WHERE id = $3`
 )

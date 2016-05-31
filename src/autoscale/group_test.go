@@ -1,9 +1,9 @@
 package autoscale
 
 import (
+	"encoding/json"
 	"testing"
 
-	"github.com/manyminds/api2go/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,11 +48,11 @@ func TestConvertGroupToJSON(t *testing.T) {
 		TemplateName: "a-template",
 	}
 
-	j, err := jsonapi.Marshal(&g)
+	j, err := json.Marshal(&g)
 	require.NoError(t, err)
 
 	var newGroup Group
-	err = jsonapi.Unmarshal(j, &newGroup)
+	err = json.Unmarshal(j, &newGroup)
 	require.NoError(t, err)
 
 	assert.Equal(t, g.ID, newGroup.ID)

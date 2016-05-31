@@ -32,9 +32,11 @@ func withDBMock(t *testing.T, fn dbTestFn) {
 func TestCreateTemplate(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		mock.ExpectBegin()
+
+		sshJSON := `[{"id":1,"fingerprint":""},{"id":2,"fingerprint":""}]`
 		mock.ExpectQuery("INSERT into templates (.+) RETURNING id").
 			WithArgs("id").
-			WithArgs("a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8(`[{"ID":1},{"ID":2}]`), "userdata").
+			WithArgs("a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8(sshJSON), "userdata").
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("id"))
 		mock.ExpectCommit()
 
@@ -96,7 +98,7 @@ func TestGetTemplate(t *testing.T) {
 		columns := []string{"id", "name", "region", "size", "image", "ssh_keys", "user_data"}
 
 		mock.ExpectQuery("SELECT (.+) from templates (.+)").
-			WithArgs("a-template").
+			WithArgs("1").
 			WillReturnRows(sqlmock.NewRows(columns).
 				AddRow("1", "a-template", "dev0", "512mb", "ubuntu-14-04-x64", []uint8(`[{"ID":1},{"ID":2}]`), "userdata"))
 
@@ -113,7 +115,7 @@ func TestGetTemplate(t *testing.T) {
 			UserData: "userdata",
 		}
 
-		tmpl, err := repo.GetTemplate(ctx, "a-template")
+		tmpl, err := repo.GetTemplate(ctx, "1")
 		require.NoError(t, err)
 		require.Equal(t, ogTmpl, tmpl)
 	})
@@ -138,10 +140,10 @@ func TestListTemplates(t *testing.T) {
 func TestDeleteTemplate(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		mock.ExpectBegin()
-		mock.ExpectExec("DELETE from templates").WithArgs("a-template").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("DELETE from templates").WithArgs("1").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repo.DeleteTemplate(ctx, "a-template")
+		err := repo.DeleteTemplate(ctx, "1")
 		require.NoError(t, err)
 	})
 }
@@ -212,7 +214,7 @@ func TestCreateGroup_InvalidName(t *testing.T) {
 
 func TestGetGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
-		groupColumns := []string{"id", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
+		groupColumns := []string{"name", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
 
 		m, err := NewFileLoad()
 		require.NoError(t, err)
@@ -224,13 +226,13 @@ func TestGetGroup(t *testing.T) {
 		require.NoError(t, err)
 
 		mock.ExpectQuery("SELECT (.+) from groups (.+)").
-			WithArgs("as").
+			WithArgs("abc").
 			WillReturnRows(sqlmock.NewRows(groupColumns).
-				AddRow("abc", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
+				AddRow("group-1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
-		group, err := repo.GetGroup(ctx, "as")
+		group, err := repo.GetGroup(ctx, "abc")
 		require.NoError(t, err)
-		require.Equal(t, "abc", group.ID)
+		require.Equal(t, "group-1", group.Name)
 
 	})
 }
@@ -262,10 +264,10 @@ func TestListGroups(t *testing.T) {
 func TestDeleteGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		mock.ExpectBegin()
-		mock.ExpectExec("DELETE from groups").WithArgs("a-group").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("DELETE from groups").WithArgs("id").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repo.DeleteGroup(ctx, "a-group")
+		err := repo.DeleteGroup(ctx, "id")
 		require.NoError(t, err)
 	})
 }
