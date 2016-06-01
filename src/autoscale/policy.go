@@ -67,6 +67,8 @@ func NewValuePolicy(options ...ValuePolicyOption) (*ValuePolicy, error) {
 // ValuePolicyScale sets scale parameters for a ValuePolicy.
 func ValuePolicyScale(minSize, maxSize int, scaleUpValue float64, scaleUpBy int, scaleDownValue float64, scaleDownBy int) ValuePolicyOption {
 	return func(vp *ValuePolicy) error {
+		vp.vpd.MinSize = minSize
+		vp.vpd.MaxSize = maxSize
 		vp.vpd.ScaleUpValue = scaleUpValue
 		vp.vpd.ScaleUpBy = scaleUpBy
 		vp.vpd.ScaleDownValue = scaleDownValue

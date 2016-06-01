@@ -1,0 +1,25 @@
+
+import Ember from 'ember';
+
+export default Ember.Route.extend({
+  model(params) {
+    return this.store.findRecord('group', params.group_id);
+  },
+
+  currentModel: function () { return this.modelFor(this.routeName); },
+  flashMessages: Ember.inject.service(),
+
+
+  actions: {
+    submit() {
+      const flashMessages = this.get('flashMessages');
+
+      this.currentModel.save().then(function(){
+        flashMessages.success("Group updated!");
+      }).catch(function(reason){
+        console.log(reason);
+        flashMessages.danger("Unable to update group!");
+      });
+    }
+  }
+});

@@ -60,7 +60,7 @@ func errorHandler(err error, c echo.Context) {
 				},
 			}
 
-			if err := c.JSON(code, apiError); err == nil {
+			if err := c.JSON(code, &apiError); err != nil {
 				log.WithError(err).Error("uaable to create api error mesage")
 			}
 

@@ -246,6 +246,8 @@ func TestUpdateGroup(t *testing.T) {
 			ID:         "abc",
 			MetricType: "load",
 			PolicyType: "value",
+			Metric:     &autoscale.FileLoad{},
+			Policy:     &autoscale.ValuePolicy{},
 		}
 
 		resp := newResponse(&ogGroup, 200)
@@ -255,13 +257,14 @@ func TestUpdateGroup(t *testing.T) {
 
 		j := `
     {
-      "group": {
-        "policy": {
-          "scale_up_value": 6
-        },
-        "metricType": "load",
-        "policyType": "value"
-      }
+        "group": {
+            "policy": {
+                "scale_up_value": 6
+            },
+            "metric": {},
+            "metricType": "load",
+            "policyType": "value"
+        }
     }`
 
 		var buf bytes.Buffer

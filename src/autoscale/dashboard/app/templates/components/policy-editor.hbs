@@ -1,7 +1,9 @@
 <fieldset>
   <legend>Policy Options for {{policyType}}</legend>
 
-  {{bs-form-element controlType="number" label="Minimum group size" property="policy.min_size"}}
+  {{#bs-form-element label="Minimum group size" property="policy.min_size" as |value id|}}
+    {{bs-input type="number" id=id value=value}}
+  {{/bs-form-element}}
 
   {{bs-form-element controlType="number" label="Maximum group size" property="policy.max_size"}}
 

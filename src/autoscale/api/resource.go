@@ -174,7 +174,7 @@ func (r *groupResource) Update(c context.Context, obj interface{}) (Response, er
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(groupWrapper{Group: in}, http.StatusCreated), nil
+	return newResponse(groupWrapper{Group: in}, http.StatusOK), nil
 }
 
 func (r *groupResource) FindAll(c context.Context) (Response, error) {

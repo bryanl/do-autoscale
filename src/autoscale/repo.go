@@ -151,7 +151,7 @@ func (r *pgRepo) SaveGroup(ctx context.Context, g Group) error {
 		return err
 	}
 
-	_, err = tx.Exec(sqlUpdateGroup, g.Metric, g.Policy, g.Name)
+	_, err = tx.Exec(sqlUpdateGroup, g.Metric, g.Policy, g.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -287,5 +287,5 @@ var (
 
 	// TODO figure out what we update
 	sqlUpdateGroup = `
-  UPDATE groups set metrics = $1, policy = $2 WHERE id = $3`
+  UPDATE groups set metric = $1, policy = $2 WHERE id = $3`
 )

@@ -106,6 +106,7 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 	if g.Metric != nil {
 		m, err := json.Marshal(g.Metric)
 		if err != nil {
+			logrus.WithError(err).Error("could not encode metric")
 			return nil, err
 		}
 
@@ -115,6 +116,7 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 	if g.Policy != nil {
 		p, err := json.Marshal(g.Policy)
 		if err != nil {
+			logrus.WithError(err).Error("could not encode policy")
 			return nil, err
 		}
 
