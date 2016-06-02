@@ -114,8 +114,7 @@ func (gm *groupMonitor) Stop() {
 }
 
 func (gm *groupMonitor) InRunList(groupName string) bool {
-	ok, _ := gm.runList.IsRunning(groupName)
-	return ok
+	return gm.runList.IsRunning(groupName)
 }
 
 func (gm *groupMonitor) SetRunList(runList RunList) {
