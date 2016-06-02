@@ -12,9 +12,10 @@ import (
 // RunList is a list containing groups which are currently
 // being autoscaled.
 type RunList interface {
-	Add(groupName string) error
-	Remove(groupName string) error
-	IsRunning(groupName string) (bool, error)
+	Add(groupID string) error
+	Remove(groupID string) error
+	IsRunning(groupID string) bool
+	List() []string
 	Reset() error
 }
 
@@ -38,29 +39,41 @@ func (rl *memoryRunList) log() *logrus.Entry {
 	return ctxutil.LogFromContext(rl.ctx).WithField("action", "run-list")
 }
 
-func (rl *memoryRunList) Add(groupName string) error {
+func (rl *memoryRunList) Add(groupID string) error {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	rl.log().WithField("group", groupName).Info("adding group to run list")
+	rl.log().WithField("group", groupID).Info("adding group to run list")
 
-	rl.dict[groupName] = true
+	rl.dict[groupID] = true
 	return nil
 }
 
-func (rl *memoryRunList) Remove(groupName string) error {
+func (rl *memoryRunList) Remove(groupID string) error {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	rl.log().WithField("group", groupName).Info("removing group from run list")
+	rl.log().WithField("group", groupID).Info("removing group from run list")
 
-	delete(rl.dict, groupName)
+	delete(rl.dict, groupID)
 	return nil
 }
 
-func (rl *memoryRunList) IsRunning(groupName string) (bool, error) {
-	_, ok := rl.dict[groupName]
-	return ok, nil
+func (rl *memoryRunList) List() []string {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	out := []string{}
+	for k := range rl.dict {
+		out = append(out, k)
+	}
+
+	return out
+}
+
+func (rl *memoryRunList) IsRunning(groupID string) bool {
+	_, ok := rl.dict[groupID]
+	return ok
 }
 
 func (rl *memoryRunList) Reset() error {
