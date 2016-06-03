@@ -70,7 +70,6 @@ func NewDB(ctx context.Context, user, password, addr, database string) (*sql.DB,
 		if err := migrateDatabase(log, dbURL); err != nil {
 			return nil, err
 		}
-
 	}
 
 	return db, nil

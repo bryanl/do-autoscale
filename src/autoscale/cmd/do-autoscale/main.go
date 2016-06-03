@@ -68,9 +68,8 @@ func main() {
 		log.WithError(err).Fatal("unable to initialize repository")
 	}
 
-	watcher, err := initWatcher(ctx, repo, log)
-	if err != nil {
-		log.WithError(err).Fatal("unable to initialize watcher")
+	if err := initScheduler(ctx, repo, log); err != nil {
+		log.WithError(err).Fatal("unable to initialize scheduler")
 	}
 
 	a := api.New(ctx, repo)
@@ -84,7 +83,6 @@ func main() {
 	}
 
 	log.Info("shutting down")
-	watcher.Stop()
 	if err := repo.Close(); err != nil {
 		log.WithError(err).Error("repository did not close successfully")
 	}
@@ -92,6 +90,7 @@ func main() {
 
 func initContext() (context.Context, Specification, *logrus.Entry) {
 	logger := logrus.New()
+
 	var s Specification
 	err := envconfig.Process("autoscale", &s)
 	if err != nil {
@@ -123,18 +122,21 @@ func initRepository(ctx context.Context, s Specification, log *logrus.Entry) (au
 	return repo, nil
 }
 
-func initWatcher(ctx context.Context, repo autoscale.Repository, log *logrus.Entry) (*autoscale.Watcher, error) {
-	watcher, err := autoscale.NewWatcher(ctx, repo)
+func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.Entry) error {
+	monitor, err := autoscale.NewMonitor(ctx, repo)
 	if err != nil {
-		log.WithError(err).Error("unable to setup watcher")
-		return nil, err
+		log.WithError(err).Error("unable to setup group monitor")
+		return err
 	}
 
-	_, err = watcher.Watch()
-	if err != nil {
-		log.WithError(err).Error("unable to start watcher")
-		return nil, err
-	}
+	groupCheck := autoscale.NewCheck(repo)
 
-	return watcher, nil
+	scheduler := autoscale.NewScheduler(ctx, groupCheck.Perform)
+
+	log.Info("starting group monitor")
+	go monitor.Start(scheduler.Status())
+	log.Info("starting scheduler")
+	go scheduler.Start()
+
+	return nil
 }

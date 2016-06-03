@@ -22,8 +22,9 @@ func TestMonitor_AddGroup(t *testing.T) {
 	repo.On("ListGroups", ctx).Return(groups, nil)
 
 	schedulerStatus := &SchedulerStatus{
-		EnableGroup:  make(chan string),
-		DisableGroup: make(chan string),
+		EnableGroup:  make(chan string, 10),
+		DisableGroup: make(chan string, 10),
+		Schedule:     make(chan string, 10),
 	}
 
 	m, err := NewMonitor(ctx, repo,
@@ -61,8 +62,9 @@ func TestMonitor_RemoveGroup(t *testing.T) {
 	}
 
 	schedulerStatus := &SchedulerStatus{
-		EnableGroup:  make(chan string, 1),
-		DisableGroup: make(chan string, 1),
+		EnableGroup:  make(chan string, 10),
+		DisableGroup: make(chan string, 10),
+		Schedule:     make(chan string, 10),
 	}
 
 	go func() {
@@ -82,72 +84,4 @@ func TestMonitor_RemoveGroup(t *testing.T) {
 	m.Stop()
 
 	assert.True(t, repo.AssertExpectations(t))
-}
-
-func TestSchedule(t *testing.T) {
-	ctx := context.Background()
-
-	actionRan := false
-
-	expectedID := "id"
-	as := &ActionStatus{
-		Done: make(chan bool, 1),
-	}
-
-	fn := func(groupID string) *ActionStatus {
-		if groupID == expectedID {
-			actionRan = true
-		}
-
-		as.Done <- true
-
-		return as
-	}
-
-	s := NewScheduler(ctx, fn)
-	status := s.Status()
-	go s.Start()
-
-	status.EnableGroup <- expectedID
-	status.Schedule <- expectedID
-
-	activity := <-status.Activity
-
-	require.True(t, actionRan)
-	require.Equal(t, expectedID, activity.ID)
-	require.NoError(t, activity.Err)
-}
-
-func TestSchedule_Disabled(t *testing.T) {
-	ctx := context.Background()
-
-	actionRan := false
-
-	expectedID := "id"
-	as := &ActionStatus{
-		Done: make(chan bool, 1),
-	}
-
-	fn := func(groupID string) *ActionStatus {
-		if groupID == expectedID {
-			actionRan = true
-		}
-
-		as.Done <- true
-
-		return as
-	}
-
-	s := NewScheduler(ctx, fn)
-	status := s.Status()
-	go s.Start()
-
-	status.DisableGroup <- expectedID
-	status.Schedule <- expectedID
-
-	activity := <-status.Activity
-
-	require.False(t, actionRan)
-	require.Equal(t, expectedID, activity.ID)
-	require.Error(t, activity.Err)
 }

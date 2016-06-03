@@ -1,47 +1,11 @@
 package autoscale
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io"
-	"pkg/doclient"
-	"regexp"
 	"sync"
-	"time"
 
 	"github.com/Sirupsen/logrus"
-)
-
-var (
-	nameRe = regexp.MustCompile(`^\w[A-Za-z0-9\-]*$`)
-
-	// ResourceManagerFactory creates a ResourceManager given a group.
-	ResourceManagerFactory ResourceManagerFactoryFn = func(g *Group) (ResourceManager, error) {
-		doClient := DOClientFactory()
-		tag := fmt.Sprintf("do:as:%s", g.Name)
-
-		h := md5.New()
-		io.WriteString(h, tag)
-		hash := fmt.Sprintf("%x", h.Sum(nil))
-
-		newTag := hash[0:8]
-
-		log := logrus.WithField("group-name", g.Name)
-		return NewDropletResource(doClient, newTag, log)
-	}
-
-	DOClientFactory = func() *doclient.Client {
-		return doclient.New(DOAccessToken())
-	}
-
-	defaultValuePolicy = valuePolicyData{
-		ScaleUpValue:   0.8,
-		ScaleUpBy:      2,
-		ScaleDownValue: 0.2,
-		ScaleDownBy:    1,
-		WarmUpDuration: 10 * time.Second,
-	}
 )
 
 // ResourceManagerFactoryFn is a function that returns ResourceManagerFactory.
