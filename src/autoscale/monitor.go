@@ -180,8 +180,9 @@ func (s *Scheduler) Status() *SchedulerStatus {
 }
 
 type ActionStatus struct {
-	Done chan bool
-	Err  error
+	Done  chan bool
+	Err   error
+	Delta int
 }
 
 func (s *Scheduler) Start() {

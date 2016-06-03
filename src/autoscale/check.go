@@ -84,5 +84,6 @@ func (c *Check) Perform(ctx context.Context, groupID string) *ActionStatus {
 		time.Sleep(wup)
 	}
 
+	as.Delta = delta
 	return as
 }
