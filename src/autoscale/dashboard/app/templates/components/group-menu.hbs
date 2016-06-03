@@ -1,16 +1,16 @@
 <ul class="nav nav-pills nav-stacked">
   {{#active-link}}
-    {{#link-to 'groups.show' model}}
+    {{#link-to 'groups.show.status' model}}
       Status
     {{/link-to}}
   {{/active-link}}
   {{#active-link}}
-    {{#link-to 'groups.policy' model}}
+    {{#link-to 'groups.show.policy' model}}
       Policy
     {{/link-to}}
   {{/active-link}}
   {{#active-link}}
-    {{#link-to 'groups.delete' model}}
+    {{#link-to 'groups.show.delete' model}}
       Delete
     {{/link-to}}
   {{/active-link}}

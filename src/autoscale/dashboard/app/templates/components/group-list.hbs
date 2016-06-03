@@ -12,11 +12,11 @@
     {{#each models.groups as |group|}}
       <tr>
         <td>
-          {{#link-to "groups.show" group}}
+          {{#link-to "groups.show.status" group}}
             {{ group.name }}
           {{/link-to}}
        </td>
-        <td>{{group.templateName}}</td>
+        <td>{{group.templateID}}</td>
         <td>{{group.metricType}}</td>
         <td>{{group.policyType}}</td>
         <td>
@@ -26,7 +26,7 @@
             {{/bs-dropdown-toggle}}
             {{#bs-dropdown-menu}}
               <li>
-                {{#link-to "groups.delete" group}}
+                {{#link-to "groups.show.delete" group}}
                   Delete
                 {{/link-to}}
                 </li>

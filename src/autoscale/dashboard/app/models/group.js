@@ -5,7 +5,7 @@ import { fragment } from 'model-fragments/attributes';
 export default Model.extend({
   name: attr(),
   baseName: attr(),
-  templateName: attr(),
+  templateID: attr(),
   metricType: attr(),
   metric: attr(),
   policyType: attr(),

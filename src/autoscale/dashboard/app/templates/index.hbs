@@ -1,1 +1,13 @@
-{{outlet}}
+<div class="row">
+  <div class="col-md-12">
+
+    {{#bs-button type="primary" action="addGroup"}}
+      Create Group
+    {{/bs-button}}
+  </div>
+</div>
+
+{{group-list
+    models=model}}
+
+ {{outlet}}

@@ -8,8 +8,6 @@ export default Ember.Route.extend({
 
   currentModel: function () { return this.modelFor(this.routeName); },
   flashMessages: Ember.inject.service(),
-
-
   actions: {
     submit() {
       const flashMessages = this.get('flashMessages');
