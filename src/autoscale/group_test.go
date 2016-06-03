@@ -38,14 +38,14 @@ func TestConvertGroupToJSON(t *testing.T) {
 	vp.vpd.WarmUpDuration = defaultWarmUpDuration
 
 	g := Group{
-		ID:           "12345",
-		Name:         "group",
-		BaseName:     "as",
-		MetricType:   "load",
-		Metric:       m,
-		PolicyType:   "value",
-		Policy:       vp,
-		TemplateName: "a-template",
+		ID:         "12345",
+		Name:       "group",
+		BaseName:   "as",
+		MetricType: "load",
+		Metric:     m,
+		PolicyType: "value",
+		Policy:     vp,
+		TemplateID: "a-template",
 	}
 
 	j, err := json.Marshal(&g)
@@ -58,7 +58,7 @@ func TestConvertGroupToJSON(t *testing.T) {
 	assert.Equal(t, g.ID, newGroup.ID)
 	assert.Equal(t, g.Name, newGroup.Name)
 	assert.Equal(t, g.BaseName, newGroup.BaseName)
-	assert.Equal(t, g.TemplateName, newGroup.TemplateName)
+	assert.Equal(t, g.TemplateID, newGroup.TemplateID)
 	assert.Equal(t, g.PolicyType, newGroup.PolicyType)
 	assert.Equal(t, g.MetricType, newGroup.MetricType)
 	assert.Equal(t, g.Policy, newGroup.Policy)

@@ -107,6 +107,7 @@ func initContext() (context.Context, Specification, *logrus.Entry) {
 }
 
 func initRepository(ctx context.Context, s Specification, log *logrus.Entry) (autoscale.Repository, error) {
+
 	db, err := autoscale.NewDB(ctx, s.DBUser, s.DBPassword, s.DBAddr, s.DBName)
 	if err != nil {
 		log.WithError(err).Error("unable to create database connection")

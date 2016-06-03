@@ -81,7 +81,7 @@ func (r *DropletResource) scaleUp(ctx context.Context, g Group, byN int, repo Re
 	var wg sync.WaitGroup
 	wg.Add(byN)
 
-	tmpl, err := repo.GetTemplate(ctx, g.TemplateName)
+	tmpl, err := repo.GetTemplate(ctx, g.TemplateID)
 	if err != nil {
 		return err
 	}

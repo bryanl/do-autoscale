@@ -171,13 +171,13 @@ func TestCreateGroup(t *testing.T) {
 		mock.ExpectCommit()
 
 		group := Group{
-			Name:         "group",
-			BaseName:     "as",
-			TemplateName: "a-template",
-			MetricType:   "load",
-			Metric:       m,
-			PolicyType:   "value",
-			Policy:       vp,
+			Name:       "group",
+			BaseName:   "as",
+			TemplateID: "a-template",
+			MetricType: "load",
+			Metric:     m,
+			PolicyType: "value",
+			Policy:     vp,
 		}
 
 		g, err := repo.CreateGroup(ctx, group)
@@ -196,13 +196,13 @@ func TestCreateGroup_InvalidName(t *testing.T) {
 		vp, err := NewValuePolicy(vps)
 
 		group := Group{
-			Name:         "!!!",
-			BaseName:     "as",
-			MetricType:   "load",
-			Metric:       m,
-			PolicyType:   "value",
-			Policy:       vp,
-			TemplateName: "a-template",
+			Name:       "!!!",
+			BaseName:   "as",
+			MetricType: "load",
+			Metric:     m,
+			PolicyType: "value",
+			Policy:     vp,
+			TemplateID: "a-template",
 		}
 
 		_, err = repo.CreateGroup(ctx, group)
@@ -214,7 +214,7 @@ func TestCreateGroup_InvalidName(t *testing.T) {
 
 func TestGetGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
-		groupColumns := []string{"name", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
+		groupColumns := []string{"name", "base_name", "template_id", "metric_type", "metric", "policy_type", "policy"}
 
 		m, err := NewFileLoad()
 		require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestGetGroup(t *testing.T) {
 
 func TestListGroups(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
-		groupColumns := []string{"id", "name", "base_name", "template_name", "metric_type", "metric", "policy_type", "policy"}
+		groupColumns := []string{"id", "name", "base_name", "template_id", "metric_type", "metric", "policy_type", "policy"}
 
 		m, err := NewFileLoad()
 		require.NoError(t, err)
@@ -282,18 +282,18 @@ func TestUpdateGroup(t *testing.T) {
 		p.vpd = defaultValuePolicy
 
 		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE groups").WithArgs(&m, &p, "group").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("UPDATE groups").WithArgs(&m, &p, "abc").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
 		g := Group{
-			ID:           "abc",
-			Name:         "group",
-			BaseName:     "as",
-			TemplateName: "a-template",
-			MetricType:   "load",
-			Metric:       m,
-			PolicyType:   "value",
-			Policy:       p,
+			ID:         "abc",
+			Name:       "group",
+			BaseName:   "as",
+			TemplateID: "a-template",
+			MetricType: "load",
+			Metric:     m,
+			PolicyType: "value",
+			Policy:     p,
 		}
 
 		err = repo.SaveGroup(ctx, g)

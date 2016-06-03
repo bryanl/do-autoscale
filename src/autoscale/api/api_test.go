@@ -325,20 +325,20 @@ func TestGetMissingGroup(t *testing.T) {
 func TestCreateGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		group := autoscale.Group{
-			Name:         "group",
-			BaseName:     "as",
-			MetricType:   "load",
-			PolicyType:   "value",
-			TemplateName: "a-template",
+			Name:       "group",
+			BaseName:   "as",
+			MetricType: "load",
+			PolicyType: "value",
+			TemplateID: "a-template",
 		}
 
 		newGroup := autoscale.Group{
-			ID:           "1",
-			Name:         "group",
-			BaseName:     "as",
-			MetricType:   "load",
-			PolicyType:   "value",
-			TemplateName: "a-template",
+			ID:         "1",
+			Name:       "group",
+			BaseName:   "as",
+			MetricType: "load",
+			PolicyType: "value",
+			TemplateID: "a-template",
 		}
 
 		resp := newResponse(newGroup, 201)

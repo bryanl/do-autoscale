@@ -31,7 +31,7 @@ export default Ember.Component.extend({
       var createRequest = {
         name: this.name,
         baseName: this.baseName,
-        templateName: this.template.name,
+        templateID: this.template.id,
         metricType: this.metricType,
         metric: this.metric,
         policyType: this.policyType,

@@ -21,17 +21,9 @@ func TestValuePolicy(t *testing.T) {
 		{resourceCount: 9, value: 0.8, expected: 10},
 	}
 
-	jsonMessage := []byte(`{
-    "min_size": 1,
-    "max_size": 10,
-    "scale_up_value": 0.8,
-    "scale_up_by": 3,
-    "scale_down_value": 0.2,
-    "scale_down_by": 2,
-    "warm_up_duration": "1m"
-  }`)
-
-	vp, err := NewValuePolicy(ValuePolicyFromJSON(jsonMessage))
+	vp, err := NewValuePolicy(ValuePolicyScale(
+		1, 10, 0.8, 3, 0.2, 2,
+	))
 	require.NoError(t, err)
 
 	for _, c := range cases {

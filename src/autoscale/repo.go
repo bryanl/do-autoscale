@@ -125,7 +125,7 @@ func (r *pgRepo) CreateGroup(ctx context.Context, g Group) (*Group, error) {
 	}
 
 	err = sqlx.Get(tx, &id, sqlCreateGroup,
-		g.Name, g.BaseName, g.TemplateName, g.MetricType, g.Metric, g.PolicyType, g.Policy)
+		g.Name, g.BaseName, g.TemplateID, g.MetricType, g.Metric, g.PolicyType, g.Policy)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -175,12 +175,12 @@ func (r *pgRepo) GetGroup(ctx context.Context, id string) (*Group, error) {
 	}
 
 	g := Group{
-		ID:           id,
-		Name:         name,
-		BaseName:     baseName,
-		TemplateName: templateName,
-		MetricType:   metricType,
-		PolicyType:   policyType,
+		ID:         id,
+		Name:       name,
+		BaseName:   baseName,
+		TemplateID: templateName,
+		MetricType: metricType,
+		PolicyType: policyType,
 	}
 
 	if err := g.LoadPolicy(policy); err != nil {
@@ -205,20 +205,20 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var id, name, baseName, templateName, metricType, policyType string
+		var id, name, baseName, templateID, metricType, policyType string
 		var metric, policy interface{}
 
-		if err := rows.Scan(&id, &name, &baseName, &templateName, &metricType, &metric, &policyType, &policy); err != nil {
+		if err := rows.Scan(&id, &name, &baseName, &templateID, &metricType, &metric, &policyType, &policy); err != nil {
 			return nil, err
 		}
 
 		g := Group{
-			ID:           id,
-			Name:         name,
-			BaseName:     baseName,
-			TemplateName: templateName,
-			MetricType:   metricType,
-			PolicyType:   policyType,
+			ID:         id,
+			Name:       name,
+			BaseName:   baseName,
+			TemplateID: templateID,
+			MetricType: metricType,
+			PolicyType: policyType,
 		}
 
 		if err := g.LoadPolicy(policy); err != nil {
@@ -272,15 +272,15 @@ var (
 
 	sqlCreateGroup = `
   INSERT into groups
-  (name, base_name, template_name, metric_type, metric, policy_type, policy)
+  (name, base_name, template_id, metric_type, metric, policy_type, policy)
   VALUES ($1, $2, $3, $4, $5, $6, $7)
   RETURNING id`
 
 	sqlGetGroup = `
-  SELECT name, base_name, template_name, metric_type, metric, policy_type, policy from groups where id=$1`
+  SELECT name, base_name, template_id, metric_type, metric, policy_type, policy from groups where id=$1`
 
 	sqlListGroups = `
-  SELECT id, name, base_name, template_name, metric_type, metric, policy_type, policy from groups`
+  SELECT id, name, base_name, template_id, metric_type, metric, policy_type, policy from groups`
 
 	sqlDeleteGroup = `
   DELETE from groups WHERE id = $1`
