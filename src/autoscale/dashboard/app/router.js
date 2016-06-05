@@ -10,7 +10,7 @@ Router.map(function() {
   this.route('groups', function() {
     this.route('new');
     this.route('show', { path: '/:group_id'}, function() {
-      this.route('status', { path: '/summary' });
+      this.route('status', { path: '/status' });
       this.route('policy');
       this.route('delete');
     });
