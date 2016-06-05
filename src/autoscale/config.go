@@ -15,6 +15,8 @@ var (
 	ErrActionTimedOut = fmt.Errorf("action timed out")
 	ErrDisabledGroup  = fmt.Errorf("group is disabled")
 
+	ScheduleReenqueueTimeout = 10 * time.Second
+
 	SchedulerActionTimeout = 60 * time.Minute
 
 	DefaultGroupCheckTimeout = 5 * time.Second

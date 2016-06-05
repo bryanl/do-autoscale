@@ -3,7 +3,7 @@ package autoscale
 import "fmt"
 
 // ActivityListener is an entity interested in listening for SchedulerActivity messages.
-type ActivityListener chan<- SchedulerActivity
+type ActivityListener chan SchedulerActivity
 
 // ActivityManager collects events from Schedule, and fans them out to multiple listerns.
 type ActivityManager struct {
@@ -20,8 +20,8 @@ func NewActivityManager(activityChan chan SchedulerActivity) *ActivityManager {
 }
 
 // RegisterListener registers ActivityListeners.
-func (a *ActivityManager) RegisterListener(fn ActivityListener) {
-	a.listeners = append(a.listeners, fn)
+func (a *ActivityManager) RegisterListener(ch ActivityListener) {
+	a.listeners = append(a.listeners, ch)
 }
 
 // Start starts the fanout process.

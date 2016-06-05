@@ -30,6 +30,10 @@ type Repository interface {
 	DeleteGroup(ctx context.Context, name string) error
 	SaveGroup(ctx context.Context, group Group) error
 
+	AddGroupStatus(ctx context.Context, g GroupStatus) error
+	ListGroupStatus(ctx context.Context) ([]GroupStatus, error)
+	GetGroupStatus(ctx context.Context, groupID string) (*GroupStatus, error)
+
 	Close() error
 }
 
@@ -250,6 +254,40 @@ func (r *pgRepo) DeleteGroup(ctx context.Context, id string) error {
 	return tx.Commit()
 }
 
+func (r *pgRepo) AddGroupStatus(ctx context.Context, g GroupStatus) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sqlCreateGroupStatus,
+		g.GroupID, g.Delta, g.Total, g.CreatedAt)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *pgRepo) ListGroupStatus(ctx context.Context) ([]GroupStatus, error) {
+	groupStatuses := []GroupStatus{}
+	if err := r.db.Select(&groupStatuses, sqlListGroupStatus); err != nil {
+		return nil, err
+	}
+
+	return groupStatuses, nil
+}
+
+func (r *pgRepo) GetGroupStatus(ctx context.Context, groupID string) (*GroupStatus, error) {
+	groupStatus := GroupStatus{}
+	if err := r.db.Get(&groupStatus, sqlGetGroupStatus, groupID); err != nil {
+		return nil, err
+	}
+
+	return &groupStatus, nil
+}
+
 func (r *pgRepo) Close() error {
 	return r.db.Close()
 }
@@ -285,7 +323,19 @@ var (
 	sqlDeleteGroup = `
   DELETE from groups WHERE id = $1`
 
-	// TODO figure out what we update
 	sqlUpdateGroup = `
   UPDATE groups set metric = $1, policy = $2 WHERE id = $3`
+
+	sqlCreateGroupStatus = `
+  INSERT into group_status
+  (group_id, delta, total, created_at)
+  VALUES ($1, $2, $3, $4)`
+
+	sqlListGroupStatus = `
+  SELECT distinct on (group_id) * from group_status order by group_id,created_at desc`
+
+	sqlGetGroupStatus = `
+  SELECT distinct on (group_id) * from group_status
+  where id = $1
+  order by group_id,created_at desc`
 )

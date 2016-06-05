@@ -59,31 +59,32 @@ func (c *Check) Perform(ctx context.Context, groupID string) *ActionStatus {
 
 	delta := newCount - count
 
-	log.WithFields(logrus.Fields{
-		"metric":       group.MetricType,
-		"metric-value": value,
-		"new-count":    newCount,
-		"delta":        delta,
-	}).Info("group change status")
-
 	changed, err := resource.Scale(ctx, *group, delta, c.repo)
 	if err != nil {
 		as.Err = err
 		return as
 	}
 
-	if err := group.MetricNotify(); err != nil {
-		log.WithError(err).Error("notifying metric of current config")
-		as.Err = err
-		return as
-	}
-
 	if changed {
+		log.WithFields(logrus.Fields{
+			"metric":       group.MetricType,
+			"metric-value": value,
+			"new-count":    newCount,
+			"delta":        delta,
+		}).Info("group change status")
+
+		if err := group.MetricNotify(); err != nil {
+			log.WithError(err).Error("notifying metric of current config")
+			as.Err = err
+			return as
+		}
+
 		wup := policy.WarmUpPeriod()
 		log.WithField("warm-up-duration", wup).Info("waiting for new service to warm up")
 		time.Sleep(wup)
 	}
 
 	as.Delta = delta
+	as.Count = newCount
 	return as
 }

@@ -131,13 +131,20 @@ func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.E
 	}
 
 	groupCheck := autoscale.NewCheck(repo)
-
 	scheduler := autoscale.NewScheduler(ctx, groupCheck.Perform)
+	schedulerStatus := scheduler.Status()
+	activityManager := autoscale.NewActivityManager(schedulerStatus.Activity)
+	dbStatus := autoscale.NewStatus(ctx, repo)
 
 	log.Info("starting group monitor")
-	go monitor.Start(scheduler.Status())
+	go monitor.Start(schedulerStatus)
 	log.Info("starting scheduler")
 	go scheduler.Start()
+	log.Info("starting activity manager")
+	go activityManager.Start()
+	log.Info("starting logging status to db")
+	activityManager.RegisterListener(dbStatus.ActivityListener)
+	go dbStatus.Start()
 
 	return nil
 }

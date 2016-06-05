@@ -14,6 +14,7 @@ type SchedulerActivity struct {
 	ID    string
 	Err   error
 	Delta int
+	Count int
 }
 
 type SchedulerStatus struct {
@@ -36,10 +37,10 @@ type Scheduler struct {
 func NewScheduler(ctx context.Context, fn GroupActionFn) *Scheduler {
 	return &Scheduler{
 		ctx:              ctx,
-		enableGroupChan:  make(chan string),
-		disableGroupChan: make(chan string),
-		scheduleChan:     make(chan string),
-		activityChan:     make(chan SchedulerActivity, 1000),
+		enableGroupChan:  make(chan string, 1),
+		disableGroupChan: make(chan string, 1),
+		scheduleChan:     make(chan string, 1),
+		activityChan:     make(chan SchedulerActivity, 1),
 		actionFn:         fn,
 		disabledIDs:      map[string]bool{},
 	}
@@ -58,6 +59,7 @@ type ActionStatus struct {
 	Done  chan bool
 	Err   error
 	Delta int
+	Count int
 }
 
 func (s *Scheduler) Start() {
@@ -87,7 +89,12 @@ func (s *Scheduler) Start() {
 					ID:    id,
 					Err:   err,
 					Delta: actionStatus.Delta,
+					Count: actionStatus.Count,
 				}
+
+				time.AfterFunc(ScheduleReenqueueTimeout, func() {
+					s.scheduleChan <- id
+				})
 			}()
 
 		case id := <-s.enableGroupChan:
@@ -111,7 +118,6 @@ func (s *Scheduler) log() *logrus.Entry {
 
 func handleActionStatus(ctx context.Context, as *ActionStatus) error {
 	log := ctxutil.LogFromContext(ctx).WithField("action", "action-handler")
-	log.Info("handle action status")
 
 	timer := time.NewTimer(SchedulerActionTimeout)
 	select {
