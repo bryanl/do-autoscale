@@ -8,8 +8,8 @@ services:
       - POSTGRES_DB=autoscale
     ports:
       - "5432:5432"
-    volumes:
-      - ./db/postgres:/var/lib/postgresql/data
+    # volumes:
+    #   - ./db/postgres:/var/lib/postgresql/data
     networks:
       - autoscale
 
