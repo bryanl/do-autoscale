@@ -1,6 +1,6 @@
 import Model from 'ember-data/model';
 import attr from 'ember-data/attr';
-import { fragment } from 'model-fragments/attributes';
+import { fragment, fragmentArray } from 'model-fragments/attributes';
 
 export default Model.extend({
   name: attr(),
@@ -9,5 +9,6 @@ export default Model.extend({
   metricType: attr(),
   metric: attr(),
   policyType: attr(),
-  policy: fragment('policy')
+  policy: fragment('policy'),
+  scaleHistory: fragmentArray('group-status')
 });

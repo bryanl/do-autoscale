@@ -6,6 +6,7 @@
       <th>Template</th>
       <th>Metric Type</th>
       <th>Policy Type</th>
+      <th>Current Instances</th>
     </tr>
   </thead>
 
@@ -21,6 +22,7 @@
         <td>{{group.templateID}}</td>
         <td>{{group.metricType}}</td>
         <td>{{group.policyType}}</td>
+        <td>{{group.scaleHistory}}</td>
         <td>
           {{#bs-dropdown}}
             {{#bs-dropdown-toggle}}

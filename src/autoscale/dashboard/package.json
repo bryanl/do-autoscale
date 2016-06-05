@@ -22,6 +22,7 @@
     "broccoli-asset-rev": "^2.4.2",
     "ember-ajax": "0.7.1",
     "ember-bootstrap": "0.7.1",
+    "ember-c3": "0.2.3",
     "ember-cli": "2.5.1",
     "ember-cli-accounting": "1.0.1",
     "ember-cli-active-link-wrapper": "0.2.0",

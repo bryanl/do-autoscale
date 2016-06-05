@@ -33,6 +33,7 @@ type Repository interface {
 	AddGroupStatus(ctx context.Context, g GroupStatus) error
 	ListGroupStatus(ctx context.Context) ([]GroupStatus, error)
 	GetGroupStatus(ctx context.Context, groupID string) (*GroupStatus, error)
+	GetGroupHistory(ctx context.Context, groupID string) ([]GroupStatus, error)
 
 	Close() error
 }
@@ -195,6 +196,13 @@ func (r *pgRepo) GetGroup(ctx context.Context, id string) (*Group, error) {
 		return nil, err
 	}
 
+	histories, err := r.GetGroupHistory(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	g.ScaleHistory = histories
+
 	return &g, nil
 }
 
@@ -232,6 +240,13 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
 		if err := g.LoadMetric(metric); err != nil {
 			return nil, err
 		}
+
+		histories, err := r.GetGroupHistory(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		g.ScaleHistory = histories
 
 		groups = append(groups, g)
 	}
@@ -288,6 +303,15 @@ func (r *pgRepo) GetGroupStatus(ctx context.Context, groupID string) (*GroupStat
 	return &groupStatus, nil
 }
 
+func (r *pgRepo) GetGroupHistory(ctx context.Context, groupID string) ([]GroupStatus, error) {
+	groupStatuses := []GroupStatus{}
+	if err := r.db.Select(&groupStatuses, sqlGetGroupHistory, groupID); err != nil {
+		return nil, err
+	}
+
+	return groupStatuses, nil
+}
+
 func (r *pgRepo) Close() error {
 	return r.db.Close()
 }
@@ -338,4 +362,10 @@ var (
   SELECT distinct on (group_id) * from group_status
   where id = $1
   order by group_id,created_at desc`
+
+	sqlGetGroupHistory = `
+  SELECT group_id, delta, total, created_at
+  FROM group_status
+  WHERE group_id = $1
+  ORDER BY created_at desc`
 )

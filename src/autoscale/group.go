@@ -18,30 +18,32 @@ type UpdateGroupRequest struct {
 
 // Group is an autoscale group
 type Group struct {
-	ID         string          `json:"id" db:"id"`
-	Name       string          `json:"name" db:"name"`
-	BaseName   string          `json:"baseName" db:"base_name"`
-	TemplateID string          `json:"templateID" db:"template_id"`
-	MetricType string          `json:"metricType" db:"metric_type"`
-	Metric     Metrics         `json:"metric"`
-	RawMetric  json.RawMessage `json:"rawMetric,omitempty" db:"metric"`
-	PolicyType string          `json:"policyType" db:"policy_type"`
-	Policy     Policy          `json:"policy" `
-	RawPolicy  json.RawMessage `json:"rawPolicy,omitempty" db:"policy"`
+	ID           string          `json:"id" db:"id"`
+	Name         string          `json:"name" db:"name"`
+	BaseName     string          `json:"baseName" db:"base_name"`
+	TemplateID   string          `json:"templateID" db:"template_id"`
+	MetricType   string          `json:"metricType" db:"metric_type"`
+	Metric       Metrics         `json:"metric"`
+	RawMetric    json.RawMessage `json:"rawMetric,omitempty" db:"metric"`
+	PolicyType   string          `json:"policyType" db:"policy_type"`
+	Policy       Policy          `json:"policy" `
+	RawPolicy    json.RawMessage `json:"rawPolicy,omitempty" db:"policy"`
+	ScaleHistory []GroupStatus   `json:"scaleHistory"`
 }
 
 var _ json.Marshaler = (*Group)(nil)
 var _ json.Unmarshaler = (*Group)(nil)
 
 type groupToJSON struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	BaseName   string          `json:"baseName"`
-	TemplateID string          `json:"templateID"`
-	MetricType string          `json:"metricType"`
-	Metric     json.RawMessage `json:"metric"`
-	PolicyType string          `json:"policyType"`
-	Policy     json.RawMessage `json:"policy"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	BaseName     string          `json:"baseName"`
+	TemplateID   string          `json:"templateID"`
+	MetricType   string          `json:"metricType"`
+	Metric       json.RawMessage `json:"metric"`
+	PolicyType   string          `json:"policyType"`
+	Policy       json.RawMessage `json:"policy"`
+	ScaleHistory []GroupStatus   `json:"scaleHistory"`
 }
 
 type jsonToGroup struct {
@@ -59,12 +61,13 @@ type jsonToGroup struct {
 func (g *Group) MarshalJSON() ([]byte, error) {
 
 	tmp := groupToJSON{
-		ID:         g.ID,
-		Name:       g.Name,
-		BaseName:   g.BaseName,
-		TemplateID: g.TemplateID,
-		MetricType: g.MetricType,
-		PolicyType: g.PolicyType,
+		ID:           g.ID,
+		Name:         g.Name,
+		BaseName:     g.BaseName,
+		TemplateID:   g.TemplateID,
+		MetricType:   g.MetricType,
+		PolicyType:   g.PolicyType,
+		ScaleHistory: g.ScaleHistory,
 	}
 
 	if g.Metric != nil {
