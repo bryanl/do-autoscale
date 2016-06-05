@@ -12,4 +12,4 @@ RUN CGO_ENABLED=0 go install autoscale/cmd/do-autoscale
 RUN apk del -v go && \
   rm -rf /var/cache/apk/*
 
-ENTRYPOINT /go/bin/do-autoscale
+ENTRYPOINT ["/go/bin/do-autoscale"]
