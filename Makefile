@@ -1,5 +1,7 @@
 .PHONY: all
 
+AUTOSCALE_HOST ?= 127.0.0.1
+
 build-app:
 	docker-compose build app
 
@@ -20,4 +22,4 @@ generate-dashboard: build-dashboard
 		docker run --rm -v "$$PWD/src/autoscale/static":"/src/static" autoscale-dashboard ember build -prod -o /src/static
 
 ember-server:
-	@cd src/autoscale/dashboard; ember server --proxy http://localhost:8888
+	@cd src/autoscale/dashboard; ember server --proxy http://${AUTOSCALE_HOST}:8888
