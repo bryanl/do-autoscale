@@ -24,10 +24,10 @@ type Group struct {
 	TemplateID string          `json:"templateID" db:"template_id"`
 	MetricType string          `json:"metricType" db:"metric_type"`
 	Metric     Metrics         `json:"metric"`
-	RawMetric  json.RawMessage `json:"rawMetric" db:"metric"`
+	RawMetric  json.RawMessage `json:"rawMetric,omitempty" db:"metric"`
 	PolicyType string          `json:"policyType" db:"policy_type"`
 	Policy     Policy          `json:"policy" `
-	RawPolicy  json.RawMessage `json:"rawPolicy" db:"policy"`
+	RawPolicy  json.RawMessage `json:"rawPolicy,omitempty" db:"policy"`
 }
 
 var _ json.Marshaler = (*Group)(nil)
