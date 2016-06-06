@@ -66,7 +66,7 @@ func (s *Scheduler) Start() {
 	for {
 		select {
 		case id := <-s.scheduleChan:
-			s.log().WithField("group-id", id).Info("scheduling group")
+			s.log().WithField("group-id", id).Debug("scheduling group")
 
 			if _, ok := s.disabledIDs[id]; ok {
 				s.log().WithField("group-id", id).Warn("will not schedule group as it is disabled")

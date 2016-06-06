@@ -100,22 +100,22 @@ func (l *PrometheusLoad) Measure(ctx context.Context, groupName string) (float64
 }
 
 // Update updates the prometheus config for a group.
-func (l *PrometheusLoad) Update(groupName string, resourceAllocations []ResourceAllocation) error {
-	l.log.WithField("group", groupName).Info("updating prometheus")
+func (l *PrometheusLoad) Update(groupID string, resourceAllocations []ResourceAllocation) error {
+	l.log.WithField("group", groupID).Info("updating prometheus")
 	tg := targetGroup{
 		Labels: map[string]string{
-			"group": groupName,
+			"group": groupID,
 		},
 	}
 
 	for _, allocation := range resourceAllocations {
-		target := fmt.Sprintf("%s:%d", allocation.Address, 9100)
+		target := fmt.Sprintf("%s:%d", allocation.Address, prometheusAgentPort)
 		tg.Targets = append(tg.Targets, target)
 	}
 
 	targetGroups := []targetGroup{tg}
 
-	path := fmt.Sprintf("%s/%s.json", l.configDir, groupName)
+	path := fmt.Sprintf("%s/%s.json", l.configDir, groupID)
 	if err := os.MkdirAll(l.configDir, 0755); err != nil {
 		return err
 	}

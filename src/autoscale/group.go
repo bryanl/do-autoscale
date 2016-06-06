@@ -175,13 +175,14 @@ func (g *Group) MetricNotify() error {
 		return err
 	}
 
-	return m.Update(g.Name, allocated)
+	return m.Update(g.ID, allocated)
 }
 
 // MetricsValue retrieves current metric value for group.
 func (g *Group) MetricsValue(ctx context.Context) (float64, error) {
 	logrus.WithFields(logrus.Fields{
 		"group-name":  g.Name,
+		"group-id":    g.ID,
 		"metric-type": g.MetricType,
 	}).Debug("fetching metric value for group")
 

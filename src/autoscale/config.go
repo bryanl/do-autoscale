@@ -32,7 +32,7 @@ var (
 
 		newTag := hash[0:8]
 
-		log := logrus.WithField("group-name", g.Name)
+		log := logrus.WithField("group-id", g.ID)
 		return NewDropletResource(doClient, newTag, log)
 	}
 
@@ -51,4 +51,6 @@ var (
 	}
 
 	nameRe = regexp.MustCompile(`^\w[A-Za-z0-9\-]*$`)
+
+	prometheusAgentPort = 9100
 )
