@@ -20,7 +20,6 @@ export default Ember.Component.extend({
 
   actions: {
     onTemplateChanged() {
-      console.log(this.get('template'));
       this.set('currentTemplate', this.get('template'));
     },
     onPolicyTypeChanged() {

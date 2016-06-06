@@ -3,9 +3,6 @@ import Ember from 'ember';
 export default Ember.Component.extend({
   init() {
     this._super(...arguments);
-    console.log("starting up");
-    console.log(this.userConfig.get('keys'));
-
     this.set('sshKeys', this.userConfig.get('keys'));
   },
 
@@ -30,8 +27,6 @@ export default Ember.Component.extend({
         sshKeys: this.sshKeys,
         userData: this.userData
       };
-
-      console.log(createRequest);
 
       const promise = this.get("onCreate")(createRequest);
       promise.then(() => {

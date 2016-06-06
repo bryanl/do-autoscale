@@ -1,5 +1,5 @@
-{{#bs-form action="submit" model=model}}
-  {{policy-editor policyType=model.policyType policy=model}}
+{{#bs-form action="submit" model=model.group}}
+  {{policy-editor policyType=model.group.policyType policy=model.group}}
 
   {{bs-button defaultText="Submit" type="primary" buttonType="submit"}}
 {{/bs-form}}

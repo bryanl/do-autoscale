@@ -9,7 +9,7 @@ export default Ember.Route.extend({
     deleteGroup() {
       const flashMessages = this.get('flashMessages');
 
-      var group = this.currentModel;
+      var group = this.currentModel.group;
       group.destroyRecord()
         .then(this.transitionTo('groups'))
         .catch(()=>{

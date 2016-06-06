@@ -27,8 +27,8 @@ var (
 )
 
 type TimeSeries struct {
-	Timestamp time.Time
-	Value     float64
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
 }
 
 // MetricConfig is the configuration for a Metric.
