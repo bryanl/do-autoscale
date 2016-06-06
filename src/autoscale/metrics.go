@@ -59,6 +59,7 @@ type Metrics interface {
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
 	Config() MetricConfig
 	Values(ctx context.Context, groupName string) ([]TimeSeries, error)
+	Remove(ctx context.Context, groupID string) error
 }
 
 // RegisterMetric registers metrics.

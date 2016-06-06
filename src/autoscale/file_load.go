@@ -128,3 +128,9 @@ func (l *FileLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, 
 		{Timestamp: time.Now().Add(-60 * time.Hour), Value: 9},
 	}, nil
 }
+
+// Remove removes the configuration for a group.
+func (l *FileLoad) Remove(ctx context.Context, groupID string) error {
+	// no op as values are hard coded.
+	return nil
+}

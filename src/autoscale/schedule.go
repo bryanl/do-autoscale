@@ -10,6 +10,11 @@ import (
 
 type GroupActionFn func(ctx context.Context, groupID string) *ActionStatus
 
+type GroupAction interface {
+	Scale(ctx context.Context, groupID string) *ActionStatus
+	Disable(ctx context.Context, groupID string) *ActionStatus
+}
+
 type SchedulerActivity struct {
 	ID    string
 	Err   error
@@ -30,18 +35,18 @@ type Scheduler struct {
 	disableGroupChan chan string
 	scheduleChan     chan string
 	activityChan     chan SchedulerActivity
-	actionFn         GroupActionFn
+	groupAction      GroupAction
 	disabledIDs      map[string]bool
 }
 
-func NewScheduler(ctx context.Context, fn GroupActionFn) *Scheduler {
+func NewScheduler(ctx context.Context, ga GroupAction) *Scheduler {
 	return &Scheduler{
 		ctx:              ctx,
 		enableGroupChan:  make(chan string, 1),
 		disableGroupChan: make(chan string, 1),
 		scheduleChan:     make(chan string, 1),
 		activityChan:     make(chan SchedulerActivity, 1),
-		actionFn:         fn,
+		groupAction:      ga,
 		disabledIDs:      map[string]bool{},
 	}
 }
@@ -78,7 +83,7 @@ func (s *Scheduler) Start() {
 			}
 
 			go func() {
-				actionStatus := s.actionFn(s.ctx, id)
+				actionStatus := s.groupAction.Scale(s.ctx, id)
 				err := handleActionStatus(s.ctx, actionStatus)
 				if err != nil {
 					s.log().WithError(err).Error("action did not run with success")
@@ -103,7 +108,26 @@ func (s *Scheduler) Start() {
 
 		case id := <-s.disableGroupChan:
 			s.log().WithField("group-id", id).Info("disabling group")
+
+			if !s.disabledIDs[id] {
+				go func(id string) {
+					actionStatus := s.groupAction.Disable(s.ctx, id)
+					err := handleActionStatus(s.ctx, actionStatus)
+					if err != nil {
+						s.log().WithError(err).Error("action did not run with success")
+					}
+
+					s.activityChan <- SchedulerActivity{
+						ID:    id,
+						Err:   err,
+						Delta: actionStatus.Delta,
+						Count: actionStatus.Count,
+					}
+				}(id)
+			}
+
 			s.disableGroup(id)
+
 		}
 	}
 }

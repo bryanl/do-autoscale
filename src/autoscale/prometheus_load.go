@@ -115,7 +115,7 @@ func (l *PrometheusLoad) Update(groupID string, resourceAllocations []ResourceAl
 
 	targetGroups := []targetGroup{tg}
 
-	path := fmt.Sprintf("%s/%s.json", l.configDir, groupID)
+	path := l.targetJSONPath(groupID)
 	if err := os.MkdirAll(l.configDir, 0755); err != nil {
 		return err
 	}
@@ -139,6 +139,7 @@ func (l *PrometheusLoad) Config() MetricConfig {
 	}
 }
 
+// Values returns the timeseries values for a group.
 func (l *PrometheusLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
@@ -182,6 +183,16 @@ func (l *PrometheusLoad) Values(ctx context.Context, groupName string) ([]TimeSe
 	}
 
 	return ts, nil
+}
+
+// Remove removes the prometheus configuration for a group.
+func (l *PrometheusLoad) Remove(ctx context.Context, groupID string) error {
+	path := l.targetJSONPath(groupID)
+	return os.Remove(path)
+}
+
+func (l *PrometheusLoad) targetJSONPath(groupID string) string {
+	return fmt.Sprintf("%s/%s.json", l.configDir, groupID)
 }
 
 type targetGroup struct {

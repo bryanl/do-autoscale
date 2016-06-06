@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestCheck(t *testing.T) {
+func TestCheckScale(t *testing.T) {
 	ogFactory := ResourceManagerFactory
 	ogDefaultConfig := DefaultConfig
 	defer func() {
@@ -69,9 +69,59 @@ func TestCheck(t *testing.T) {
 
 		check := NewCheck(repo)
 
-		as := check.Perform(ctx, "id")
+		as := check.Scale(ctx, "id")
 
 		assert.NoError(t, as.Err)
 		assert.Equal(t, c.delta, as.Delta, fmt.Sprintf("delta did not match"))
 	}
+}
+
+func TestCheckDisable(t *testing.T) {
+	ogFactory := ResourceManagerFactory
+	ogDefaultConfig := DefaultConfig
+	defer func() {
+		ResourceManagerFactory = ogFactory
+		DefaultConfig = ogDefaultConfig
+	}()
+
+	tmpPath, err := ioutil.TempDir("", "autoscaler")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpPath)
+
+	DefaultConfig[OptionFileLoadPath] = tmpPath
+
+	ctx := context.Background()
+	RegisterOfflineMetrics(ctx)
+
+	ResourceManagerFactory = func(g *Group) (ResourceManager, error) {
+		r := NewLocalResource(ctx)
+		r.(*LocalResource).count = 3
+		return r, nil
+	}
+
+	policy, err := NewValuePolicy(ValuePolicyScale(
+		1, 10, 0.8, 2, 0.2, 1,
+	))
+	require.NoError(t, err)
+
+	metric, err := NewFileLoad()
+	require.NoError(t, err)
+
+	repo := &MockRepository{}
+	group := &Group{
+		ID:         "id",
+		Name:       "test-group",
+		MetricType: "load",
+		PolicyType: "value",
+		Policy:     policy,
+		Metric:     metric,
+	}
+	repo.On("GetGroup", mock.Anything, "id").Return(group, nil)
+
+	check := NewCheck(repo)
+	as := check.Disable(ctx, "id")
+
+	assert.NoError(t, as.Err)
+	assert.Equal(t, -3, as.Delta)
+	assert.Equal(t, 0, as.Count)
 }

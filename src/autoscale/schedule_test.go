@@ -7,6 +7,19 @@ import (
 	"golang.org/x/net/context"
 )
 
+type testCheck struct {
+	ScaleFn   GroupActionFn
+	DisableFn GroupActionFn
+}
+
+func (tc *testCheck) Scale(ctx context.Context, groupID string) *ActionStatus {
+	return tc.ScaleFn(ctx, groupID)
+}
+
+func (tc *testCheck) Disable(ctx context.Context, groupID string) *ActionStatus {
+	return tc.DisableFn(ctx, groupID)
+}
+
 func TestSchedule(t *testing.T) {
 	ctx := context.Background()
 
@@ -17,17 +30,19 @@ func TestSchedule(t *testing.T) {
 		Done: make(chan bool, 1),
 	}
 
-	fn := func(ctx context.Context, groupID string) *ActionStatus {
-		if groupID == expectedID {
-			actionRan = true
-		}
+	tc := &testCheck{
+		ScaleFn: func(ctx context.Context, groupID string) *ActionStatus {
+			if groupID == expectedID {
+				actionRan = true
+			}
 
-		as.Done <- true
+			as.Done <- true
 
-		return as
+			return as
+		},
 	}
 
-	s := NewScheduler(ctx, fn)
+	s := NewScheduler(ctx, tc)
 	status := s.Status()
 	go s.Start()
 
@@ -51,17 +66,19 @@ func TestSchedule_Disabled(t *testing.T) {
 		Done: make(chan bool, 1),
 	}
 
-	fn := func(ctx context.Context, groupID string) *ActionStatus {
-		if groupID == expectedID {
-			actionRan = true
-		}
+	tc := &testCheck{
+		DisableFn: func(ctx context.Context, groupID string) *ActionStatus {
+			if groupID == expectedID {
+				actionRan = true
+			}
 
-		as.Done <- true
+			as.Done <- true
 
-		return as
+			return as
+		},
 	}
 
-	s := NewScheduler(ctx, fn)
+	s := NewScheduler(ctx, tc)
 	status := s.Status()
 	go s.Start()
 

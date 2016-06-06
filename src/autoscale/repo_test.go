@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -216,6 +217,8 @@ func TestGetGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		groupColumns := []string{"name", "base_name", "template_id", "metric_type", "metric", "policy_type", "policy"}
 
+		statusColumns := []string{"group_id", "delta", "total", "created_at"}
+
 		m, err := NewFileLoad()
 		require.NoError(t, err)
 
@@ -230,6 +233,11 @@ func TestGetGroup(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows(groupColumns).
 				AddRow("group-1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
+		mock.ExpectQuery("SELECT (.+) FROM group_status").
+			WithArgs("abc").
+			WillReturnRows(sqlmock.NewRows(statusColumns).
+				AddRow("abc", 1, 1, time.Now()))
+
 		group, err := repo.GetGroup(ctx, "abc")
 		require.NoError(t, err)
 		require.Equal(t, "group-1", group.Name)
@@ -240,6 +248,8 @@ func TestGetGroup(t *testing.T) {
 func TestListGroups(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		groupColumns := []string{"id", "name", "base_name", "template_id", "metric_type", "metric", "policy_type", "policy"}
+
+		statusColumns := []string{"group_id", "delta", "total", "created_at"}
 
 		m, err := NewFileLoad()
 		require.NoError(t, err)
@@ -255,6 +265,16 @@ func TestListGroups(t *testing.T) {
 				AddRow("abc", "group1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)).
 				AddRow("def", "group2", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
+		mock.ExpectQuery("SELECT (.+) FROM group_status").
+			WithArgs("abc").
+			WillReturnRows(sqlmock.NewRows(statusColumns).
+				AddRow("abc", 1, 1, time.Now()))
+
+		mock.ExpectQuery("SELECT (.+) FROM group_status").
+			WithArgs("def").
+			WillReturnRows(sqlmock.NewRows(statusColumns).
+				AddRow("def", 1, 1, time.Now()))
+
 		groups, err := repo.ListGroups(ctx)
 		require.NoError(t, err)
 		require.Len(t, groups, 2)
@@ -264,7 +284,7 @@ func TestListGroups(t *testing.T) {
 func TestDeleteGroup(t *testing.T) {
 	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
 		mock.ExpectBegin()
-		mock.ExpectExec("DELETE from groups").WithArgs("id").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("UPDATE groups").WithArgs("id").WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
 		err := repo.DeleteGroup(ctx, "id")

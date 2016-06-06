@@ -342,10 +342,12 @@ var (
   SELECT name, base_name, template_id, metric_type, metric, policy_type, policy from groups where id=$1`
 
 	sqlListGroups = `
-  SELECT id, name, base_name, template_id, metric_type, metric, policy_type, policy from groups`
+  SELECT id, name, base_name, template_id, metric_type, metric, policy_type, policy
+  from groups
+  where deleted_at is null`
 
 	sqlDeleteGroup = `
-  DELETE from groups WHERE id = $1`
+  UPDATE groups set deleted_at = now() where id = $1`
 
 	sqlUpdateGroup = `
   UPDATE groups set metric = $1, policy = $2 WHERE id = $3`

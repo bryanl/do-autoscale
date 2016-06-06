@@ -8,7 +8,8 @@ CREATE TABLE groups (
   metric_type text,
   metric jsonb,
   policy_type text,
-  policy jsonb
+  policy jsonb,
+  deleted_at timestamp with time zone
 );
 
 CREATE UNIQUE INDEX groups_name_idx on groups(name);

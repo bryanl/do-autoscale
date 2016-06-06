@@ -150,6 +150,14 @@ func (g *Group) IsValid() bool {
 	return true
 }
 
+func (g *Group) Disable(ctx context.Context) error {
+	if g.Metric == nil {
+		return fmt.Errorf("no metric for group")
+	}
+
+	return g.Metric.Remove(ctx, g.ID)
+}
+
 // Resource is a resource than can be managed for a group.
 func (g *Group) Resource() (ResourceManager, error) {
 	return ResourceManagerFactory(g)
