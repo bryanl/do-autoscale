@@ -42,7 +42,7 @@ func (c *Check) Perform(ctx context.Context, groupID string) *ActionStatus {
 		return as
 	}
 
-	value, err := group.MetricsValue()
+	value, err := group.MetricsValue(ctx)
 	if err != nil {
 		as.Err = err
 		return as

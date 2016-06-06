@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"golang.org/x/net/context"
 )
 
 var (
@@ -93,7 +96,7 @@ func (l *FileLoad) Scan(src interface{}) error {
 }
 
 // Measure returns the current value fro a group.
-func (l *FileLoad) Measure(groupName string) (float64, error) {
+func (l *FileLoad) Measure(ctx context.Context, groupName string) (float64, error) {
 	p := filepath.Join(l.StatsDir, groupName)
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
@@ -116,4 +119,12 @@ func (l *FileLoad) Config() MetricConfig {
 	return MetricConfig{
 		"statsDir": l.StatsDir,
 	}
+}
+
+// Values for values
+func (l *FileLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, error) {
+	return []TimeSeries{
+		{Timestamp: time.Now(), Value: 9},
+		{Timestamp: time.Now().Add(-60 * time.Hour), Value: 9},
+	}, nil
 }

@@ -66,7 +66,7 @@ func NewPrometheusLoad(ctx context.Context) (*PrometheusLoad, error) {
 var _ Metrics = (*PrometheusLoad)(nil)
 
 // Measure returns the average load for an entire group.
-func (l *PrometheusLoad) Measure(groupName string) (float64, error) {
+func (l *PrometheusLoad) Measure(ctx context.Context, groupName string) (float64, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
 	config := prometheus.Config{
@@ -78,7 +78,7 @@ func (l *PrometheusLoad) Measure(groupName string) (float64, error) {
 	}
 
 	qapi := prometheus.NewQueryAPI(pClient)
-	ctx := context.Background()
+
 	value, err := qapi.Query(ctx, q, time.Now())
 	if err != nil {
 		return 0, err
@@ -137,6 +137,51 @@ func (l *PrometheusLoad) Config() MetricConfig {
 	return MetricConfig{
 		"configDir": l.configDir,
 	}
+}
+
+func (l *PrometheusLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, error) {
+	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
+
+	config := prometheus.Config{
+		Address: l.prometheusURL,
+	}
+
+	pClient, err := prometheus.New(config)
+	if err != nil {
+		return nil, err
+	}
+
+	qapi := prometheus.NewQueryAPI(pClient)
+
+	now := time.Now()
+	then := now.Add(-6 * time.Hour)
+
+	r := prometheus.Range{
+		Start: then,
+		End:   now,
+		Step:  30 * time.Second,
+	}
+	value, err := qapi.QueryRange(ctx, q, r)
+	if err != nil {
+		return nil, err
+	}
+
+	ts := []TimeSeries{}
+
+	switch value.(type) {
+	case model.Matrix:
+		v := value.(model.Matrix)
+		for _, i := range v {
+			for _, sp := range i.Values {
+				ts = append(ts, TimeSeries{
+					Timestamp: sp.Timestamp.Time(),
+					Value:     float64(sp.Value),
+				})
+			}
+		}
+	}
+
+	return ts, nil
 }
 
 type targetGroup struct {

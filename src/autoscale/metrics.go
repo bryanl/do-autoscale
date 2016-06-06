@@ -3,6 +3,7 @@ package autoscale
 import (
 	"fmt"
 	"pkg/ctxutil"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -24,6 +25,11 @@ var (
 	// DefaultConfig is the default configuration for metrics.
 	DefaultConfig = Config{}
 )
+
+type TimeSeries struct {
+	Timestamp time.Time
+	Value     float64
+}
 
 // MetricConfig is the configuration for a Metric.
 type MetricConfig map[string]interface{}
@@ -49,9 +55,10 @@ func Retrieve(metricType string) (Metrics, error) {
 
 // Metrics pull metrics for a autoscaler.
 type Metrics interface {
-	Measure(groupName string) (float64, error)
+	Measure(ctx context.Context, groupName string) (float64, error)
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
 	Config() MetricConfig
+	Values(ctx context.Context, groupName string) ([]TimeSeries, error)
 }
 
 // RegisterMetric registers metrics.

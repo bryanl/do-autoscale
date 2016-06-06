@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 )
 
@@ -177,7 +179,7 @@ func (g *Group) MetricNotify() error {
 }
 
 // MetricsValue retrieves current metric value for group.
-func (g *Group) MetricsValue() (float64, error) {
+func (g *Group) MetricsValue(ctx context.Context) (float64, error) {
 	logrus.WithFields(logrus.Fields{
 		"group-name":  g.Name,
 		"metric-type": g.MetricType,
@@ -189,7 +191,7 @@ func (g *Group) MetricsValue() (float64, error) {
 		return 0, err
 	}
 
-	return m.Measure(g.Name)
+	return m.Measure(ctx, g.Name)
 }
 
 // LoadPolicy loads policies.
