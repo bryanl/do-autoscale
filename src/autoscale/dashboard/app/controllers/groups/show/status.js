@@ -2,6 +2,10 @@ import Ember from 'ember';
 
 export default Ember.Controller.extend({
 
+  afterModel: function(model) {
+    model.group.reload();
+  },
+
   resourceStatus: Ember.computed('model', function () {
     const model = this.get('model').group;
 
@@ -63,46 +67,16 @@ export default Ember.Controller.extend({
         y: {
           show: true
         }
-      }
-    };
-
-    return obj;
-  }),
-
-  metricStatusData: Ember.computed('model.group.timeseriesValues', function () {
-    var values = this.get('model.group.timeseriesValues');
-
-    var json = [];
-    values.forEach((x) => {
-      json.push(x.serialize());
-    });
-
-    var obj = {
-      type: 'line',
-      json: json,
-      keys: {
-        x: 'timestamp',
-        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ',
-        value: ['value'],
       },
-      x: 'x',
-      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+      point: {
+        show: false,
+      }
     };
 
     return obj;
   }),
 
-  metricStatusAxis: Ember.computed(function () {
-    return {
-      x: {
-        type: 'timeseries',
-        tick: {
-          format: '%Y-%m-%d %I:%M',
-          count: 4
-        }
-      }
-    };
-  }),
 
   metricStatus: Ember.computed('model.group.timeseriesValues', function () {
     var values = this.get('model.group.timeseriesValues');
@@ -148,6 +122,10 @@ export default Ember.Controller.extend({
         y: {
           show: true
         }
+      },
+
+      point: {
+        show: false,
       }
 
     };
