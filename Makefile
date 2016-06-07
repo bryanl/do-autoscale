@@ -23,3 +23,6 @@ generate-dashboard: build-dashboard
 
 ember-server:
 	@cd src/autoscale/dashboard; ember server --proxy http://${AUTOSCALE_HOST}:8888
+
+regen-mocks:
+	@cd src/autoscale; mockery -all -inpkg
