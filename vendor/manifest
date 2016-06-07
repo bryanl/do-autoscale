@@ -185,7 +185,7 @@
 		{
 			"importpath": "github.com/labstack/echo",
 			"repository": "https://github.com/labstack/echo",
-			"revision": "f73681b91814acbc346d9265c455fe3f7d7a1e22",
+			"revision": "4e98fa9664ac3d865c6eb523f764bf7c97699467",
 			"branch": "master"
 		},
 		{

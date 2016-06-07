@@ -9,7 +9,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
-	"github.com/labstack/gommon/log"
+	"github.com/labstack/echo/log"
 )
 
 type (
@@ -18,7 +18,7 @@ type (
 		*http.Request
 		header engine.Header
 		url    engine.URL
-		logger *log.Logger
+		logger log.Logger
 	}
 )
 
@@ -27,7 +27,7 @@ const (
 )
 
 // NewRequest returns `Request` instance.
-func NewRequest(r *http.Request, l *log.Logger) *Request {
+func NewRequest(r *http.Request, l log.Logger) *Request {
 	return &Request{
 		Request: r,
 		url:     &URL{URL: r.URL},
@@ -43,10 +43,7 @@ func (r *Request) IsTLS() bool {
 
 // Scheme implements `engine.Request#Scheme` function.
 func (r *Request) Scheme() string {
-	if r.IsTLS() {
-		return "https"
-	}
-	return "http"
+	return r.Request.URL.Scheme
 }
 
 // Host implements `engine.Request#Host` function.
