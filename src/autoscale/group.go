@@ -31,6 +31,7 @@ type Group struct {
 	Policy       Policy          `json:"policy" `
 	RawPolicy    json.RawMessage `json:"rawPolicy,omitempty" db:"policy"`
 	ScaleHistory []GroupStatus   `json:"scaleHistory"`
+	Values       []TimeSeries    `json:"timeseriesValues"`
 }
 
 var _ json.Marshaler = (*Group)(nil)
@@ -45,7 +46,8 @@ type groupToJSON struct {
 	Metric       json.RawMessage `json:"metric"`
 	PolicyType   string          `json:"policyType"`
 	Policy       json.RawMessage `json:"policy"`
-	ScaleHistory []GroupStatus   `json:"scaleHistory"`
+	ScaleHistory []GroupStatus   `json:"scaleHistory,omitempty"`
+	Values       []TimeSeries    `json:"timeseriesValues,omitempty"`
 }
 
 type jsonToGroup struct {
@@ -61,7 +63,6 @@ type jsonToGroup struct {
 
 // MarshalJSON marshals a Group into json.
 func (g *Group) MarshalJSON() ([]byte, error) {
-
 	tmp := groupToJSON{
 		ID:           g.ID,
 		Name:         g.Name,
@@ -70,6 +71,7 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 		MetricType:   g.MetricType,
 		PolicyType:   g.PolicyType,
 		ScaleHistory: g.ScaleHistory,
+		Values:       g.Values,
 	}
 
 	if g.Metric != nil {
@@ -226,12 +228,7 @@ func (g *Group) LoadMetric(in interface{}) error {
 	default:
 		return fmt.Errorf("unknown metric type: %v", g.PolicyType)
 	case "load":
-		fl := FileLoad{}
-		if err := fl.Scan(in); err != nil {
-			return err
-		}
-
-		g.Metric = &fl
+		g.Metric = metrics["load"]
 	}
 
 	return nil

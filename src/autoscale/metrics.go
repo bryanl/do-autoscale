@@ -26,6 +26,20 @@ var (
 	DefaultConfig = Config{}
 )
 
+// TimeRange is a time range.
+type TimeRange string
+
+const (
+	// RangeQuarterDay is six hours.
+	RangeQuarterDay TimeRange = "6h"
+	// RangeDay is a one day.
+	RangeDay TimeRange = "24h"
+	// RangeWeek is seven days.
+	RangeWeek TimeRange = "168h"
+	// RangeMonth is 30 days.
+	RangeMonth TimeRange = "720h"
+)
+
 type TimeSeries struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     float64   `json:"value"`
@@ -58,7 +72,7 @@ type Metrics interface {
 	Measure(ctx context.Context, groupName string) (float64, error)
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
 	Config() MetricConfig
-	Values(ctx context.Context, groupName string) ([]TimeSeries, error)
+	Values(ctx context.Context, groupName string, rangeLength TimeRange) ([]TimeSeries, error)
 	Remove(ctx context.Context, groupID string) error
 }
 

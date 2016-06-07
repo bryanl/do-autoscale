@@ -4,6 +4,7 @@
   },
   "exclude": [
     "tmp",
-    "temp"
+    "temp",
+    "node_modules"
   ]
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"autoscale"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -66,6 +67,10 @@ type userConfigWrapper struct {
 
 type groupConfigWrapper struct {
 	GroupConfig autoscale.GroupConfig `json:"groupConfigs"`
+}
+
+type timeSeriesWrapper struct {
+	Values []autoscale.TimeSeries `json:"timeseries_values"`
 }
 
 type templateResource struct {
@@ -138,7 +143,14 @@ func (r *groupResource) FindOne(c context.Context, id string) (Response, error) 
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	return newResponse(groupWrapper{Group: *group}, http.StatusOK), nil
+	values, err := group.Metric.Values(c, id, autoscale.RangeQuarterDay)
+	if err != nil {
+		return newResponse(nil, http.StatusInternalServerError), err
+	}
+
+	group.Values = values
+
+	return newResponse(&groupWrapper{Group: *group}, http.StatusOK), nil
 }
 
 func (r *groupResource) Create(c context.Context, obj interface{}) (Response, error) {
@@ -247,4 +259,50 @@ func (r *groupConfigResource) FindAll(c context.Context) (Response, error) {
 	}
 
 	return newResponse(groupConfigWrapper{GroupConfig: *gc}, http.StatusOK), nil
+}
+
+type timeSeriesResource struct {
+	groupID string
+	repo    autoscale.Repository
+}
+
+var _ Resource = (*timeSeriesResource)(nil)
+
+func (r *timeSeriesResource) FindOne(c context.Context, id string) (Response, error) {
+	return newResponse(nil, http.StatusNotImplemented), nil
+}
+
+func (r *timeSeriesResource) Create(c context.Context, obj interface{}) (Response, error) {
+	return newResponse(nil, http.StatusNotImplemented), nil
+}
+
+func (r *timeSeriesResource) Delete(c context.Context, id string) (Response, error) {
+	return newResponse(nil, http.StatusNotImplemented), nil
+}
+
+func (r *timeSeriesResource) Update(c context.Context, obj interface{}) (Response, error) {
+	return newResponse(nil, http.StatusNotImplemented), nil
+}
+
+func (r *timeSeriesResource) FindAll(c context.Context) (Response, error) {
+	group, err := r.repo.GetGroup(c, r.groupID)
+	if err != nil {
+		if err == autoscale.ObjectMissingErr {
+			return newResponse(nil, http.StatusNotFound), nil
+		}
+
+		return newResponse(nil, http.StatusInternalServerError), nil
+	}
+
+	m := group.Metric
+	if m == nil {
+		return newResponse(nil, http.StatusInternalServerError), fmt.Errorf("no metric for group")
+	}
+
+	values, err := m.Values(c, r.groupID, autoscale.RangeQuarterDay)
+	if err != nil {
+		return newResponse(nil, http.StatusInternalServerError), err
+	}
+
+	return newResponse(timeSeriesWrapper{Values: values}, http.StatusOK), nil
 }

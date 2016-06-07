@@ -140,7 +140,7 @@ func (l *PrometheusLoad) Config() MetricConfig {
 }
 
 // Values returns the timeseries values for a group.
-func (l *PrometheusLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, error) {
+func (l *PrometheusLoad) Values(ctx context.Context, groupName string, rl TimeRange) ([]TimeSeries, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
 	config := prometheus.Config{
@@ -154,13 +154,33 @@ func (l *PrometheusLoad) Values(ctx context.Context, groupName string) ([]TimeSe
 
 	qapi := prometheus.NewQueryAPI(pClient)
 
+	d, err := time.ParseDuration(string(rl))
+	if err != nil {
+		return nil, err
+	}
+
 	now := time.Now()
-	then := now.Add(-6 * time.Hour)
+	then := now.Add(-1 * d)
+
+	log := ctxutil.LogFromContext(ctx).WithField("action", "prometheus-load")
+	log.Infof("now: %s, then: %s\n", now.String(), then.String())
+
+	var step time.Duration
+	switch rl {
+	case RangeQuarterDay:
+		step = 30 * time.Second
+	case RangeDay:
+		step = 2 * time.Minute
+	case RangeWeek:
+		step = 14 * time.Minute
+	case RangeMonth:
+		step = 30 * time.Minute
+	}
 
 	r := prometheus.Range{
 		Start: then,
 		End:   now,
-		Step:  30 * time.Second,
+		Step:  step,
 	}
 	value, err := qapi.QueryRange(ctx, q, r)
 	if err != nil {

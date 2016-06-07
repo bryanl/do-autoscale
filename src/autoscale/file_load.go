@@ -122,7 +122,7 @@ func (l *FileLoad) Config() MetricConfig {
 }
 
 // Values for values
-func (l *FileLoad) Values(ctx context.Context, groupName string) ([]TimeSeries, error) {
+func (l *FileLoad) Values(ctx context.Context, groupName string, tr TimeRange) ([]TimeSeries, error) {
 	return []TimeSeries{
 		{Timestamp: time.Now(), Value: 9},
 		{Timestamp: time.Now().Add(-60 * time.Hour), Value: 9},

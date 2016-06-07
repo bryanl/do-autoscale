@@ -10,5 +10,6 @@ export default Model.extend({
   metric: attr(),
   policyType: attr(),
   policy: fragment('policy'),
-  scaleHistory: fragmentArray('group-status')
+  scaleHistory: fragmentArray('group-status'),
+  timeseriesValues: fragmentArray('timeseries')
 });

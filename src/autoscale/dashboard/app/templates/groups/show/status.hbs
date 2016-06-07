@@ -6,8 +6,14 @@
   </div>
 </div>
 
-<div class="row">
+<div class="row margin-bottom-lg">
   <div class="col-md-12">
-    {{c3-chart data=data axis=axis grid=grid}}
+    {{c3-chart data=resourceStatus.data axis=resourceStatus.axis grid=resourceStatus.grid}}
+  </div>
+</div>
+
+<div class="row ">
+  <div class="col-md-12">
+    {{c3-chart data=metricStatus.data axis=metricStatus.axis grid=metricStatus.grid}}
   </div>
 </div>

@@ -32,7 +32,7 @@ type errorMsg struct {
 }
 
 func errorHandler(err error, c echo.Context) {
-	log := ctxutil.LogFromContext(c.NetContext())
+	log := ctxutil.LogFromContext(c)
 
 	code := http.StatusInternalServerError
 	msg := http.StatusText(code)
@@ -82,6 +82,7 @@ type API struct {
 	groupResourceFactory       func() Resource
 	userConfigResourceFactory  func() Resource
 	groupConfigResourceFactory func() Resource
+	timeSeriesResourceFactory  func(groupID string) Resource
 }
 
 // New creates an instance of API.
@@ -108,12 +109,20 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 		groupConfigResourceFactory: func() Resource {
 			return &groupConfigResource{repo: repo}
 		},
+		timeSeriesResourceFactory: func(groupID string) Resource {
+			return &timeSeriesResource{
+				groupID: groupID,
+				repo:    repo,
+			}
+		},
 	}
 
 	log := ctxutil.LogFromContext(ctx)
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			c.SetContext(ctx)
+
 			reqID := c.Request().Header().Get("X-Request-Id")
 			if reqID == "" {
 				reqID = uuid.NewV4().String()
@@ -145,6 +154,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Delete("/templates/:id", a.deleteTemplate)
 	g.Get("/groups", a.listGroups)
 	g.Get("/groups/:id", a.getGroup)
+	g.Get("/groups/:id/time_series", a.getGroupTimeSeries)
 	g.Post("/groups", a.createGroup)
 	g.Delete("/groups/:id", a.deleteGroup)
 	g.Put("/groups/:id", a.updateGroup)
@@ -254,7 +264,6 @@ func (a *API) getGroup(c echo.Context) error {
 	}
 
 	return buildResponse(c, resp)
-
 }
 
 func (a *API) createGroup(c echo.Context) error {
@@ -313,6 +322,16 @@ func (a *API) userConfig(c echo.Context) error {
 
 func (a *API) groupConfig(c echo.Context) error {
 	resp, err := a.groupConfigResourceFactory().FindAll(c)
+	if err != nil {
+		return err
+	}
+
+	return buildResponse(c, resp)
+}
+
+func (a *API) getGroupTimeSeries(c echo.Context) error {
+	id := c.Param("id")
+	resp, err := a.timeSeriesResourceFactory(id).FindAll(c)
 	if err != nil {
 		return err
 	}

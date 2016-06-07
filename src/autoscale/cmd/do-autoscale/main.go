@@ -56,6 +56,7 @@ func main() {
 	}
 
 	if s.RegisterOfflineMetrics {
+		log.Warn("enabling offline metrics")
 		autoscale.RegisterOfflineMetrics(ctx)
 	}
 
