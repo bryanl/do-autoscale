@@ -40,6 +40,11 @@ const (
 	RangeMonth TimeRange = "720h"
 )
 
+// Duration converts a TimeRange to a time.Duration.
+func (tr TimeRange) Duration() (time.Duration, error) {
+	return time.ParseDuration(string(tr))
+}
+
 type TimeSeries struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     float64   `json:"value"`

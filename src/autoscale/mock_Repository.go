@@ -224,12 +224,12 @@ func (_m *MockRepository) GetGroupStatus(ctx context.Context, groupID string) (*
 
 	return r0, r1
 }
-func (_m *MockRepository) GetGroupHistory(ctx context.Context, groupID string) ([]GroupStatus, error) {
-	ret := _m.Called(ctx, groupID)
+func (_m *MockRepository) GetGroupHistory(ctx context.Context, groupID string, tr TimeRange) ([]GroupStatus, error) {
+	ret := _m.Called(ctx, groupID, tr)
 
 	var r0 []GroupStatus
-	if rf, ok := ret.Get(0).(func(context.Context, string) []GroupStatus); ok {
-		r0 = rf(ctx, groupID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, TimeRange) []GroupStatus); ok {
+		r0 = rf(ctx, groupID, tr)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]GroupStatus)
@@ -237,8 +237,8 @@ func (_m *MockRepository) GetGroupHistory(ctx context.Context, groupID string) (
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, groupID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, TimeRange) error); ok {
+		r1 = rf(ctx, groupID, tr)
 	} else {
 		r1 = ret.Error(1)
 	}

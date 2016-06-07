@@ -2,6 +2,8 @@ package autoscale
 
 import (
 	"database/sql"
+	"fmt"
+	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/jmoiron/sqlx"
@@ -33,7 +35,7 @@ type Repository interface {
 	AddGroupStatus(ctx context.Context, g GroupStatus) error
 	ListGroupStatus(ctx context.Context) ([]GroupStatus, error)
 	GetGroupStatus(ctx context.Context, groupID string) (*GroupStatus, error)
-	GetGroupHistory(ctx context.Context, groupID string) ([]GroupStatus, error)
+	GetGroupHistory(ctx context.Context, groupID string, tr TimeRange) ([]GroupStatus, error)
 
 	Close() error
 }
@@ -196,7 +198,7 @@ func (r *pgRepo) GetGroup(ctx context.Context, id string) (*Group, error) {
 		return nil, err
 	}
 
-	histories, err := r.GetGroupHistory(ctx, id)
+	histories, err := r.GetGroupHistory(ctx, id, RangeQuarterDay)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +243,7 @@ func (r *pgRepo) ListGroups(ctx context.Context) ([]Group, error) {
 			return nil, err
 		}
 
-		histories, err := r.GetGroupHistory(ctx, id)
+		histories, err := r.GetGroupHistory(ctx, id, RangeQuarterDay)
 		if err != nil {
 			return nil, err
 		}
@@ -303,11 +305,43 @@ func (r *pgRepo) GetGroupStatus(ctx context.Context, groupID string) (*GroupStat
 	return &groupStatus, nil
 }
 
-func (r *pgRepo) GetGroupHistory(ctx context.Context, groupID string) ([]GroupStatus, error) {
+func (r *pgRepo) GetGroupHistory(ctx context.Context, groupID string, tr TimeRange) ([]GroupStatus, error) {
+	d, err := tr.Duration()
+	if err != nil {
+		return nil, fmt.Errorf("TimeRange is invalid: %v", err)
+	}
+
+	now := time.Now().UTC()
+	then := now.Add(-1 * d)
+
 	groupStatuses := []GroupStatus{}
-	if err := r.db.Select(&groupStatuses, sqlGetGroupHistory, groupID); err != nil {
+	if err := r.db.Select(&groupStatuses, sqlGetGroupHistory, groupID, then, now); err != nil {
 		return nil, err
 	}
+
+	if len(groupStatuses) > 0 {
+		last := groupStatuses[len(groupStatuses)-1]
+		last.CreatedAt = now
+		first := groupStatuses[0]
+		first.CreatedAt = then
+		groupStatuses = append([]GroupStatus{first}, groupStatuses...)
+		groupStatuses = append(groupStatuses, last)
+
+		return groupStatuses, nil
+	}
+
+	gs, err := r.GetGroupStatus(ctx, groupID)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, fmt.Errorf("could not find latest groupStatus: %v", err)
+		}
+
+		gs = &GroupStatus{}
+	}
+
+	groupStatuses = append(groupStatuses,
+		GroupStatus{GroupID: groupID, Delta: gs.Delta, Total: gs.Total, CreatedAt: then},
+		GroupStatus{GroupID: groupID, Delta: gs.Delta, Total: gs.Total, CreatedAt: now})
 
 	return groupStatuses, nil
 }
@@ -362,12 +396,13 @@ var (
 
 	sqlGetGroupStatus = `
   SELECT distinct on (group_id) * from group_status
-  where id = $1
+  where group_id = $1
   order by group_id,created_at desc`
 
 	sqlGetGroupHistory = `
   SELECT group_id, delta, total, created_at
   FROM group_status
   WHERE group_id = $1
-  ORDER BY created_at desc`
+  AND created_at BETWEEN $2 AND $3
+  ORDER BY created_at asc`
 )

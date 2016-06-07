@@ -6,8 +6,8 @@ type MockMonitor struct {
 	mock.Mock
 }
 
-func (_m *MockMonitor) Start(s Scheduler) {
-	_m.Called(s)
+func (_m *MockMonitor) Start(_a0 *SchedulerStatus) {
+	_m.Called(_a0)
 }
 func (_m *MockMonitor) Stop() {
 	_m.Called()

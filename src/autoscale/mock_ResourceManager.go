@@ -8,7 +8,6 @@ type MockResourceManager struct {
 	mock.Mock
 }
 
-// Count provides a mock function with given fields:
 func (_m *MockResourceManager) Count() (int, error) {
 	ret := _m.Called()
 
@@ -28,8 +27,6 @@ func (_m *MockResourceManager) Count() (int, error) {
 
 	return r0, r1
 }
-
-// Scale provides a mock function with given fields: ctx, g, byN, repo
 func (_m *MockResourceManager) Scale(ctx context.Context, g Group, byN int, repo Repository) (bool, error) {
 	ret := _m.Called(ctx, g, byN, repo)
 
@@ -49,8 +46,6 @@ func (_m *MockResourceManager) Scale(ctx context.Context, g Group, byN int, repo
 
 	return r0, r1
 }
-
-// Allocated provides a mock function with given fields:
 func (_m *MockResourceManager) Allocated() ([]ResourceAllocation, error) {
 	ret := _m.Called()
 

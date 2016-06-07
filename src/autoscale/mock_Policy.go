@@ -8,7 +8,6 @@ type MockPolicy struct {
 	mock.Mock
 }
 
-// CalculateSize provides a mock function with given fields: resourceCount, value
 func (_m *MockPolicy) CalculateSize(resourceCount int, value float64) int {
 	ret := _m.Called(resourceCount, value)
 
@@ -21,8 +20,6 @@ func (_m *MockPolicy) CalculateSize(resourceCount int, value float64) int {
 
 	return r0
 }
-
-// WarmUpPeriod provides a mock function with given fields:
 func (_m *MockPolicy) WarmUpPeriod() time.Duration {
 	ret := _m.Called()
 
@@ -35,8 +32,6 @@ func (_m *MockPolicy) WarmUpPeriod() time.Duration {
 
 	return r0
 }
-
-// Config provides a mock function with given fields:
 func (_m *MockPolicy) Config() PolicyConfig {
 	ret := _m.Called()
 
@@ -49,8 +44,6 @@ func (_m *MockPolicy) Config() PolicyConfig {
 
 	return r0
 }
-
-// MarshalJSON provides a mock function with given fields:
 func (_m *MockPolicy) MarshalJSON() ([]byte, error) {
 	ret := _m.Called()
 

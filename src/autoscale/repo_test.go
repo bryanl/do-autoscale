@@ -1,6 +1,7 @@
 package autoscale
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -234,7 +235,7 @@ func TestGetGroup(t *testing.T) {
 				AddRow("group-1", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
 		mock.ExpectQuery("SELECT (.+) FROM group_status").
-			WithArgs("abc").
+			WithArgs("abc", anyTime{}, anyTime{}).
 			WillReturnRows(sqlmock.NewRows(statusColumns).
 				AddRow("abc", 1, 1, time.Now()))
 
@@ -266,12 +267,12 @@ func TestListGroups(t *testing.T) {
 				AddRow("def", "group2", "as", "template-1", "load", []uint8(mJSON), "value", []uint8(pJSON)))
 
 		mock.ExpectQuery("SELECT (.+) FROM group_status").
-			WithArgs("abc").
+			WithArgs("abc", anyTime{}, anyTime{}).
 			WillReturnRows(sqlmock.NewRows(statusColumns).
 				AddRow("abc", 1, 1, time.Now()))
 
 		mock.ExpectQuery("SELECT (.+) FROM group_status").
-			WithArgs("def").
+			WithArgs("def", anyTime{}, anyTime{}).
 			WillReturnRows(sqlmock.NewRows(statusColumns).
 				AddRow("def", 1, 1, time.Now()))
 
@@ -318,5 +319,76 @@ func TestUpdateGroup(t *testing.T) {
 
 		err = repo.SaveGroup(ctx, g)
 		require.NoError(t, err)
+	})
+}
+
+type anyTime struct{}
+
+// Match satisfies sqlmock.Argument interface
+func (a anyTime) Match(v driver.Value) bool {
+	_, ok := v.(time.Time)
+	return ok
+}
+
+func TestGetGroupHistory(t *testing.T) {
+	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
+		columns := []string{"group_id", "delta", "total", "created_at"}
+
+		now := time.Now().UTC()
+		createdAt := now.Add(-1 * time.Hour)
+		createdAt2 := createdAt.Add(5 * time.Minute)
+
+		mock.ExpectQuery("SELECT (.*) FROM group_status").
+			WithArgs("1", anyTime{}, anyTime{}).
+			WillReturnRows(sqlmock.NewRows(columns).
+				AddRow("1", 1, 1, createdAt).
+				AddRow("1", 4, 5, createdAt2))
+
+		history, err := repo.GetGroupHistory(ctx, "1", RangeQuarterDay)
+		require.NoError(t, err)
+		require.Len(t, history, 4)
+	})
+}
+
+func TestGetGroupHistory_NoCurrentHistory(t *testing.T) {
+	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
+		columns := []string{"group_id", "delta", "total", "created_at"}
+
+		rows := sqlmock.NewRows(columns)
+		mock.ExpectQuery("SELECT (.*) FROM group_status").
+			WithArgs("1", anyTime{}, anyTime{}).
+			WillReturnRows(rows)
+
+		mock.ExpectQuery("SELECT distinct (.*) from group_status").
+			WithArgs("1").
+			WillReturnRows(sqlmock.NewRows(columns).
+				AddRow("1", 1, 1, time.Now()))
+
+		history, err := repo.GetGroupHistory(ctx, "1", RangeQuarterDay)
+		require.NoError(t, err)
+		require.Len(t, history, 2)
+		require.Equal(t, 1, history[0].Delta)
+		require.Equal(t, 1, history[1].Delta)
+		require.Equal(t, 1, history[0].Total)
+		require.Equal(t, 1, history[1].Total)
+	})
+}
+
+func TestGetGroupHistory_NoHistory(t *testing.T) {
+	withDBMock(t, func(ctx context.Context, repo Repository, mock sqlmock.Sqlmock) {
+		columns := []string{"group_id", "delta", "total", "created_at"}
+
+		rows := sqlmock.NewRows(columns)
+		mock.ExpectQuery("SELECT (.*) FROM group_status").
+			WithArgs("1", anyTime{}, anyTime{}).
+			WillReturnRows(rows)
+
+		mock.ExpectQuery("SELECT distinct (.*) from group_status").
+			WithArgs("1").
+			WillReturnRows(rows)
+
+		history, err := repo.GetGroupHistory(ctx, "1", RangeQuarterDay)
+		require.NoError(t, err)
+		require.Len(t, history, 2)
 	})
 }
