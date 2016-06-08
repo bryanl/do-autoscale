@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
+	"golang.org/x/net/websocket"
 
 	"autoscale"
 
@@ -74,9 +75,10 @@ func errorHandler(err error, c echo.Context) {
 
 // API is the autoscale API.
 type API struct {
-	Mux  http.Handler
-	repo autoscale.Repository
-	ctx  context.Context
+	Mux    http.Handler
+	repo   autoscale.Repository
+	ctx    context.Context
+	notify *autoscale.Notify
 
 	templateResourceFactory    func() Resource
 	groupResourceFactory       func() Resource
@@ -86,16 +88,17 @@ type API struct {
 }
 
 // New creates an instance of API.
-func New(ctx context.Context, repo autoscale.Repository) *API {
+func New(ctx context.Context, repo autoscale.Repository, notify *autoscale.Notify) *API {
 	e := echo.New()
 
 	std := standard.WithConfig(engine.Config{})
 	std.SetHandler(e)
 
 	a := &API{
-		Mux:  std,
-		repo: repo,
-		ctx:  ctx,
+		Mux:    std,
+		repo:   repo,
+		ctx:    ctx,
+		notify: notify,
 
 		templateResourceFactory: func() Resource {
 			return &templateResource{repo: repo}
@@ -160,6 +163,7 @@ func New(ctx context.Context, repo autoscale.Repository) *API {
 	g.Put("/groups/:id", a.updateGroup)
 	g.Get("/user_config", a.userConfig)
 	g.Get("/group_configs", a.groupConfig)
+	g.Get("/notifications", standard.WrapHandler(a.notificationSocket()))
 
 	e.Get("/*", func(c echo.Context) error {
 		w := c.Response().(*standard.Response).ResponseWriter
@@ -337,4 +341,23 @@ func (a *API) getGroupTimeSeries(c echo.Context) error {
 	}
 
 	return buildResponse(c, resp)
+}
+
+func (a *API) notificationSocket() websocket.Handler {
+	log := ctxutil.LogFromContext(a.ctx)
+	return websocket.Handler(func(ws *websocket.Conn) {
+		for {
+			select {
+			case notif := <-a.notify.NotificationListener:
+				j, err := json.Marshal(&notif)
+				if err != nil {
+					log.WithError(err).Error("unable to marshal notification")
+				}
+
+				if err = websocket.Message.Send(ws, string(j)); err != nil {
+					log.WithError(err).Error("unable to send message to websocket client")
+				}
+			}
+		}
+	})
 }

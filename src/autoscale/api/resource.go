@@ -143,8 +143,6 @@ func (r *groupResource) FindOne(c context.Context, id string) (Response, error) 
 		return newResponse(nil, http.StatusInternalServerError), nil
 	}
 
-	fmt.Printf("histories: %#v\n", group.ScaleHistory)
-
 	values, err := group.Metric.Values(c, id, autoscale.RangeQuarterDay)
 	if err != nil {
 		return newResponse(nil, http.StatusInternalServerError), err

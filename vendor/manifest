@@ -349,6 +349,13 @@
 			"path": "/netutil"
 		},
 		{
+			"importpath": "golang.org/x/net/websocket",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "154d9f9ea81208afed560f4cf27b4860c8ed1904",
+			"branch": "master",
+			"path": "/websocket"
+		},
+		{
 			"importpath": "golang.org/x/oauth2",
 			"repository": "https://go.googlesource.com/oauth2",
 			"revision": "e86e2718db89775a4604abc10a5d3a5672e7336e",

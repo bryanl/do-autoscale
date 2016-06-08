@@ -28,8 +28,9 @@ type apiTestFn func(ctx context.Context, mocks *apiTestMocks, u *url.URL)
 
 func withAPITest(t *testing.T, fn apiTestFn) {
 	ctx := context.Background()
+	notify := autoscale.NewNotify()
 	repo := &autoscale.MockRepository{}
-	api := New(ctx, repo)
+	api := New(ctx, repo, notify)
 
 	mocks := &apiTestMocks{
 		templateResource:    &MockResource{},

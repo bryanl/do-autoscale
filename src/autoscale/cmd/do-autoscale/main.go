@@ -69,11 +69,12 @@ func main() {
 		log.WithError(err).Fatal("unable to initialize repository")
 	}
 
-	if err := initScheduler(ctx, repo, log); err != nil {
+	notify, err := initScheduler(ctx, repo, log)
+	if err != nil {
 		log.WithError(err).Fatal("unable to initialize scheduler")
 	}
 
-	a := api.New(ctx, repo)
+	a := api.New(ctx, repo, notify)
 
 	log.WithFields(logrus.Fields{
 		"http-addr": s.HTTPAddr,
@@ -124,11 +125,11 @@ func initRepository(ctx context.Context, s Specification, log *logrus.Entry) (au
 	return repo, nil
 }
 
-func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.Entry) error {
+func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.Entry) (*autoscale.Notify, error) {
 	monitor, err := autoscale.NewMonitor(ctx, repo)
 	if err != nil {
 		log.WithError(err).Error("unable to setup group monitor")
-		return err
+		return nil, err
 	}
 
 	groupCheck := autoscale.NewCheck(repo)
@@ -137,6 +138,7 @@ func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.E
 	schedulerStatus := scheduler.Status()
 	activityManager := autoscale.NewActivityManager(schedulerStatus.Activity)
 	dbStatus := autoscale.NewStatus(ctx, repo)
+	notify := autoscale.NewNotify(ctx, repo)
 
 	log.Info("starting group monitor")
 	go monitor.Start(schedulerStatus)
@@ -147,6 +149,9 @@ func initScheduler(ctx context.Context, repo autoscale.Repository, log *logrus.E
 	log.Info("starting logging status to db")
 	activityManager.RegisterListener(dbStatus.ActivityListener)
 	go dbStatus.Start()
+	log.Info("starting notification manager")
+	activityManager.RegisterListener(notify.ActivityListener)
+	go notify.Start()
 
-	return nil
+	return notify, nil
 }
