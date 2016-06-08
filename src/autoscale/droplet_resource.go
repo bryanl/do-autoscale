@@ -47,6 +47,10 @@ func NewDropletResource(doClient *doclient.Client, tag string, log *logrus.Entry
 		return nil, err
 	}
 
+	if err := verifyTag(autoscaleTag, doClient, log); err != nil {
+		return nil, err
+	}
+
 	return &DropletResource{
 		doClient: doClient,
 		tag:      tag,
@@ -233,6 +237,11 @@ func bootDroplet(dc *dropletConfig) {
 
 	logWithTag.Info("tagging droplet")
 	if err := dc.doc.TagsService.TagResources(dc.tag, trr); err != nil {
+		dc.doc.DropletsService.Delete(droplet.ID)
+		logWithTag.WithError(err).Error("deleting droplet because it cannot be tagged")
+	}
+
+	if err := dc.doc.TagsService.TagResources(autoscaleTag, trr); err != nil {
 		dc.doc.DropletsService.Delete(droplet.ID)
 		logWithTag.WithError(err).Error("deleting droplet because it cannot be tagged")
 	}

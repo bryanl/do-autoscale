@@ -53,4 +53,7 @@ var (
 	nameRe = regexp.MustCompile(`^\w[A-Za-z0-9\-]*$`)
 
 	prometheusAgentPort = 9100
+
+	// autoscaleTag is the tag applied to all droplets created by autoscale.
+	autoscaleTag = "autoscale"
 )
