@@ -8,7 +8,7 @@ build-app:
 test:
 	@gb test
 
-start-app: build-app
+run-app: build-app
 	@docker-compose up -d app
 
 generate: generate-dashboard
