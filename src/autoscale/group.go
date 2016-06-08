@@ -38,16 +38,17 @@ var _ json.Marshaler = (*Group)(nil)
 var _ json.Unmarshaler = (*Group)(nil)
 
 type groupToJSON struct {
-	ID           string          `json:"id"`
-	Name         string          `json:"name"`
-	BaseName     string          `json:"baseName"`
-	TemplateID   string          `json:"templateID"`
-	MetricType   string          `json:"metricType"`
-	Metric       json.RawMessage `json:"metric"`
-	PolicyType   string          `json:"policyType"`
-	Policy       json.RawMessage `json:"policy"`
-	ScaleHistory []GroupStatus   `json:"scaleHistory,omitempty"`
-	Values       []TimeSeries    `json:"timeseriesValues,omitempty"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	BaseName     string               `json:"baseName"`
+	TemplateID   string               `json:"templateID"`
+	MetricType   string               `json:"metricType"`
+	Metric       json.RawMessage      `json:"metric"`
+	PolicyType   string               `json:"policyType"`
+	Policy       json.RawMessage      `json:"policy"`
+	ScaleHistory []GroupStatus        `json:"scaleHistory,omitempty"`
+	Values       []TimeSeries         `json:"timeseriesValues,omitempty"`
+	Resources    []ResourceAllocation `json:"resources,omitempty"`
 }
 
 type jsonToGroup struct {
@@ -93,6 +94,20 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 
 		tmp.Policy = p
 	}
+
+	rm, err := g.Resource()
+	if err != nil {
+		logrus.WithError(err).Error("could not retrieve resource manager")
+		return nil, err
+	}
+
+	resources, err := rm.Allocated()
+	if err != nil {
+		logrus.WithError(err).Error("could not retrieve resources")
+		return nil, err
+	}
+
+	tmp.Resources = resources
 
 	return json.Marshal(&tmp)
 }

@@ -53,12 +53,6 @@ type TimeSeries struct {
 // MetricConfig is the configuration for a Metric.
 type MetricConfig map[string]interface{}
 
-// ResourceAllocation is information about an allocated resource.
-type ResourceAllocation struct {
-	Name    string
-	Address string
-}
-
 // Config is configuration for metrics
 type Config map[int]interface{}
 
@@ -78,6 +72,7 @@ type Metrics interface {
 	Update(groupName string, resourceAllocations []ResourceAllocation) error
 	Config() MetricConfig
 	Values(ctx context.Context, groupName string, rangeLength TimeRange) ([]TimeSeries, error)
+	InstanceValues(ctx context.Context, groupName, instanceID string, rangeLength TimeRange) ([]TimeSeries, error)
 	Remove(ctx context.Context, groupID string) error
 }
 

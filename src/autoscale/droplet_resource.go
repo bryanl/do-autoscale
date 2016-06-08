@@ -8,6 +8,7 @@ import (
 	"pkg/util/shuffle"
 	"strconv"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -148,9 +149,15 @@ func (r *DropletResource) Allocated() ([]ResourceAllocation, error) {
 			return nil, err
 		}
 
+		t, err := time.Parse(time.RFC3339Nano, droplet.Created)
+		if err != nil {
+			return nil, err
+		}
+
 		allocation := ResourceAllocation{
-			Name:    droplet.Name,
-			Address: ip,
+			Name:      droplet.Name,
+			Address:   ip,
+			CreatedAt: t.UTC(),
 		}
 
 		allocations = append(allocations, allocation)

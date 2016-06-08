@@ -129,6 +129,14 @@ func (l *FileLoad) Values(ctx context.Context, groupName string, tr TimeRange) (
 	}, nil
 }
 
+// InstanceValues for values
+func (l *FileLoad) InstanceValues(ctx context.Context, groupName, instanceID string, tr TimeRange) ([]TimeSeries, error) {
+	return []TimeSeries{
+		{Timestamp: time.Now(), Value: 8},
+		{Timestamp: time.Now().Add(-60 * time.Hour), Value: 8},
+	}, nil
+}
+
 // Remove removes the configuration for a group.
 func (l *FileLoad) Remove(ctx context.Context, groupID string) error {
 	// no op as values are hard coded.

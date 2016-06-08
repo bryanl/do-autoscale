@@ -10,6 +10,11 @@
     {{/link-to}}
   {{/active-link}}
   {{#active-link}}
+    {{#link-to 'groups.show.resources' model}}
+      Resources
+    {{/link-to}}
+  {{/active-link}}
+  {{#active-link}}
     {{#link-to 'groups.show.delete' model}}
       Delete
     {{/link-to}}

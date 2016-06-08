@@ -142,7 +142,16 @@ func (l *PrometheusLoad) Config() MetricConfig {
 // Values returns the timeseries values for a group.
 func (l *PrometheusLoad) Values(ctx context.Context, groupName string, rl TimeRange) ([]TimeSeries, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
+	return l.queryRange(ctx, q, rl)
+}
 
+// InstanceValues returns the timeseries values for an instance.
+func (l *PrometheusLoad) InstanceValues(ctx context.Context, groupName, instanceID string, rl TimeRange) ([]TimeSeries, error) {
+	q := fmt.Sprintf(`node_load1{group="%s",instance="%s:9100"}`, groupName, instanceID)
+	return l.queryRange(ctx, q, rl)
+}
+
+func (l *PrometheusLoad) queryRange(ctx context.Context, q string, rl TimeRange) ([]TimeSeries, error) {
 	config := prometheus.Config{
 		Address: l.prometheusURL,
 	}

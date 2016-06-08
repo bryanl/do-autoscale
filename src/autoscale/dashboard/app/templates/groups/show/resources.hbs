@@ -1,0 +1,26 @@
+<div class="panel panel-default">
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-md-12">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each model.group.resources as |resource|}}
+              <tr>
+                <td>{{resource.name}}</td>
+                <td>{{resource.address}}</td>
+                <td>{{resource.createdAt}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

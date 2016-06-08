@@ -12,6 +12,7 @@ Router.map(function() {
     this.route('show', { path: '/:group_id'}, function() {
       this.route('status', { path: '/status' });
       this.route('policy');
+      this.route('resources');
       this.route('delete');
     });
   });
