@@ -2,8 +2,8 @@
   <div class="panel-body">
     <div class="row">
       <div class="col-md-12">
-        {{#bs-form action="submit" model=model.group}}
-          {{policy-editor policyType=model.group.policyType policy=model.group}}
+        {{#bs-form action="submit" model=model}}
+          {{policy-editor policyType=model.policyType policy=group}}
 
           {{bs-button defaultText="Submit" type="primary" buttonType="submit"}}
         {{/bs-form}}

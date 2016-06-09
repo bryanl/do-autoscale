@@ -69,6 +69,8 @@ var _ Metrics = (*PrometheusLoad)(nil)
 func (l *PrometheusLoad) Measure(ctx context.Context, groupName string) (float64, error) {
 	q := fmt.Sprintf(`avg(node_load1{group="%s"})`, groupName)
 
+	l.log.WithField("query", q).Debug("retrieveing values from prometheus")
+
 	config := prometheus.Config{
 		Address: l.prometheusURL,
 	}

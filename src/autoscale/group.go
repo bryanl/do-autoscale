@@ -217,7 +217,7 @@ func (g *Group) MetricsValue(ctx context.Context) (float64, error) {
 		return 0, err
 	}
 
-	return m.Measure(ctx, g.Name)
+	return m.Measure(ctx, g.ID)
 }
 
 // LoadPolicy loads policies.

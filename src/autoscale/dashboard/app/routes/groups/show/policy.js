@@ -8,7 +8,7 @@ export default Ember.Route.extend({
     submit() {
       const flashMessages = this.get('flashMessages');
 
-      this.currentModel.group.save().then(function(){
+      this.currentModel.save().then(function(){
         flashMessages.success("Group updated!");
       }).catch(function(reason){
         console.log(reason);
