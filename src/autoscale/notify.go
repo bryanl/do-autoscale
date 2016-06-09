@@ -2,6 +2,7 @@ package autoscale
 
 import (
 	"pkg/ctxutil"
+	"time"
 
 	"github.com/satori/go.uuid"
 
@@ -10,14 +11,15 @@ import (
 
 // Notification is a notification message from the scheduler.
 type Notification struct {
-	ID      string `json:"id"`
-	GroupID string `json:"groupID"`
-	Name    string `json:"name"`
-	Action  string `json:"action"`
-	Delta   int    `json:"delta"`
-	Count   int    `json:"count"`
-	Message string `json:"message"`
-	IsError bool   `json:"isError"`
+	ID        string    `json:"id"`
+	GroupID   string    `json:"groupID"`
+	Name      string    `json:"name"`
+	Action    string    `json:"action"`
+	Delta     int       `json:"delta"`
+	Count     int       `json:"count"`
+	Message   string    `json:"message"`
+	IsError   bool      `json:"isError"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Notify listens to the scheduler to generate Notification.
@@ -55,9 +57,10 @@ func (n *Notify) Start() {
 		}
 
 		notif := Notification{
-			ID:      uuid.NewV4().String(),
-			GroupID: msg.ID,
-			Name:    g.Name,
+			ID:        uuid.NewV4().String(),
+			GroupID:   msg.ID,
+			Name:      g.Name,
+			CreatedAt: time.Now(),
 		}
 		if msg.Err != nil {
 			notif.Message = msg.Err.Error()

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
-	"golang.org/x/net/websocket"
 
 	"autoscale"
 
@@ -196,6 +195,19 @@ func New(ctx context.Context, repo autoscale.Repository, notify *autoscale.Notif
 
 	e.SetHTTPErrorHandler(errorHandler)
 
+	go hub.run()
+	go func() {
+		for notif := range notify.NotificationListener {
+			j, err := json.Marshal(&notif)
+			if err != nil {
+				log.WithError(err).Error("unable to marshal notification")
+			}
+
+			msg := string(j)
+			hub.broadcastMessage(msg)
+		}
+	}()
+
 	return a
 }
 
@@ -343,21 +355,28 @@ func (a *API) getGroupTimeSeries(c echo.Context) error {
 	return buildResponse(c, resp)
 }
 
-func (a *API) notificationSocket() websocket.Handler {
-	log := ctxutil.LogFromContext(a.ctx)
-	return websocket.Handler(func(ws *websocket.Conn) {
-		for {
-			select {
-			case notif := <-a.notify.NotificationListener:
-				j, err := json.Marshal(&notif)
-				if err != nil {
-					log.WithError(err).Error("unable to marshal notification")
-				}
-
-				if err = websocket.Message.Send(ws, string(j)); err != nil {
-					log.WithError(err).Error("unable to send message to websocket client")
-				}
-			}
-		}
-	})
+func (a *API) notificationSocket() http.HandlerFunc {
+	return serveWs
 }
+
+// func (a *API) notificationSocket() websocket.Handler {
+// 	log := ctxutil.LogFromContext(a.ctx)
+// 	return websocket.Handler(func(ws *websocket.Conn) {
+// 		for {
+// 			select {
+// 			case notif := <-a.notify.NotificationListener:
+// 				j, err := json.Marshal(&notif)
+// 				if err != nil {
+// 					log.WithError(err).Error("unable to marshal notification")
+// 				}
+
+// 				msg := string(j)
+// 				log.WithField("payload", msg).Info("sending to websocket")
+
+// 				if err = websocket.Message.Send(ws, string(j)); err != nil {
+// 					log.WithError(err).Error("unable to send message to websocket client")
+// 				}
+// 			}
+// 		}
+// 	})
+// }

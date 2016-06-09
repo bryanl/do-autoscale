@@ -108,9 +108,9 @@
 			"path": "/query"
 		},
 		{
-			"importpath": "github.com/gorilla/context",
-			"repository": "https://github.com/gorilla/context",
-			"revision": "a8d44e7d8e4d532b6a27a02dd82abb31cc1b01bd",
+			"importpath": "github.com/gorilla/websocket",
+			"repository": "https://github.com/gorilla/websocket",
+			"revision": "a68708917c6a4f06314ab4e52493cc61359c9d42",
 			"branch": "master"
 		},
 		{
@@ -347,13 +347,6 @@
 			"revision": "0c607074acd38c5f23d1344dfe74c977464d1257",
 			"branch": "master",
 			"path": "/netutil"
-		},
-		{
-			"importpath": "golang.org/x/net/websocket",
-			"repository": "https://go.googlesource.com/net",
-			"revision": "154d9f9ea81208afed560f4cf27b4860c8ed1904",
-			"branch": "master",
-			"path": "/websocket"
 		},
 		{
 			"importpath": "golang.org/x/oauth2",
