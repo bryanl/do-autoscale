@@ -1,5 +1,13 @@
-{{#bs-form action="submit" model=model.group}}
-  {{policy-editor policyType=model.group.policyType policy=model.group}}
+<div class="panel panel-default">
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-md-12">
+        {{#bs-form action="submit" model=model.group}}
+          {{policy-editor policyType=model.group.policyType policy=model.group}}
 
-  {{bs-button defaultText="Submit" type="primary" buttonType="submit"}}
-{{/bs-form}}
+          {{bs-button defaultText="Submit" type="primary" buttonType="submit"}}
+        {{/bs-form}}
+      </div>
+    </div>
+  </div>
+</div>
