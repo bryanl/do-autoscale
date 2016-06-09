@@ -1,8 +1,12 @@
+/* jshint node: true */
+
+import config from '../config/environment';
 import Ember from 'ember';
 
 export default Ember.Component.extend({
   websockets: Ember.inject.service(),
   socketRef: null,
+  websocketURL: config.APP.websocketURL,
 
   willRender() {
     this.websocketConnect();
@@ -11,7 +15,7 @@ export default Ember.Component.extend({
   websocketConnect() {
     // TODO get this URL from somewhere else
     var self = this;
-    const socket = this.get('websockets').socketFor('ws://localhost:8888/api/notifications');
+    const socket = this.get('websockets').socketFor(this.websocketURL);
     socket.on('open', this.myOpenHandler, this);
     socket.on('message', this.myMessageHandler, this);
     socket.on('close', () => {
@@ -26,7 +30,7 @@ export default Ember.Component.extend({
 
   notifications: [],
 
-  myOpenHandler: function (event) {
+  myOpenHandler: function () {
   },
 
   myMessageHandler: function (event) {

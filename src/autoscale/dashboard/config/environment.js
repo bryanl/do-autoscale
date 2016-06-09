@@ -16,10 +16,13 @@ module.exports = function(environment) {
     APP: {
       // Here you can pass flags/options to your application instance
       // when it is created
+      websocketURL: "ws://localhost:8888/api/notifications"
     }
   };
 
   if (environment === 'development') {
+    ENV.APP.websocketURL = "ws://192.81.208.211:8888/api/notifications"
+
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
     // ENV.APP.LOG_TRANSITIONS = true;
