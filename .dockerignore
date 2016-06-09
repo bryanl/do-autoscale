@@ -1,3 +1,7 @@
 db/postgres
 .git
 src/autoscale/dashboard
+bin/
+vendor/bin
+pkg/
+vendor/pkg
