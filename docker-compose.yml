@@ -14,12 +14,10 @@ services:
       - autoscale
 
   prometheus:
-    image: prom/prometheus
-    command: -config.file=/etc/prometheus/prometheus.yml -storage.local.path=/prometheus -storage.local.memory-chunks=1048576
+    image: bryanl/autoscale-prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
       - /var/lib/autoscale/prometheus
     networks:
       - autoscale
