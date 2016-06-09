@@ -1,11 +1,29 @@
 @import "../../bower_components/bootstrap/less/bootstrap.less";
 
-.with-margin(@size: 1.5em) {
-  margin-top: @size;
-  margin-bottom: @size;
+.badge-notify {
+  font-size: 0.6em;
+  position: relative;
+  top: -13px;
+  left: -15px;
 }
+
+.badge-with-alerts {
+  background: red;
+}
+
+.badge-with-no-alerts {
+  display: none;
+}
+
+.gi-large{font-size: 1.4em;}
 
 .margin-bottom-xs {margin-bottom: ceil(@line-height-computed / 4);}
 .margin-bottom-sm {margin-bottom: ceil(@line-height-computed / 2);}
 .margin-bottom-md {margin-bottom: @line-height-computed;}
 .margin-bottom-lg {margin-bottom: ceil(@line-height-computed * 2);}
+
+.with-margin(@size: 1.5em) {
+  margin-top: @size;
+  margin-bottom: @size;
+}
+

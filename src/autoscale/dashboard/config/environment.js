@@ -21,7 +21,7 @@ module.exports = function(environment) {
   };
 
   if (environment === 'development') {
-    ENV.APP.websocketURL = "ws://192.81.208.211:8888/api/notifications"
+    ENV.APP.websocketURL = "ws://192.81.208.211:8888/api/notifications";
 
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;

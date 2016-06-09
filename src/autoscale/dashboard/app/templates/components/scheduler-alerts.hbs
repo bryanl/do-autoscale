@@ -1,8 +1,15 @@
 {{#bs-dropdown tagName="li"}}
   {{#bs-dropdown-toggle}}
-    <span class="glyphicon glyphicon-bell" aria-hidden="true"></span>
-    <span class="badge">{{notifications.length}}</span>
+    <span class="glyphicon glyphicon-bell gi-large" aria-hidden="true"></span>
+    <span class="badge badge-notify {{badgeHasAlerts}}">{{notificationEntries.length}}</span>
   {{/bs-dropdown-toggle}}
   {{#bs-dropdown-menu}}
+    {{#each notificationEntries as |notification|}}
+      <li>
+        {{#link-to "groups.show.status" notification.id}}
+          {{{notification.msg}}}
+        {{/link-to}}
+      </li>
+    {{/each}}
   {{/bs-dropdown-menu}}
 {{/bs-dropdown}}
