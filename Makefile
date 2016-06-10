@@ -19,7 +19,7 @@ build-dashboard:
 
 generate-dashboard: build-dashboard
 	@mkdir -p src/autoscale/static; \
-		docker run --rm -v "$$PWD/src/autoscale/static":"/src/static" autoscale-dashboard ember build -prod -o /src/static
+		docker run --rm -v "$$PWD/src/autoscale/static":"/src/static" autoscale-dashboard ember build --environment="production" -o /src/static
 
 ember-server:
 	@cd src/autoscale/dashboard; ember server --proxy http://${AUTOSCALE_HOST}:8888
