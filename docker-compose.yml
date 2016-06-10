@@ -32,6 +32,17 @@ services:
     networks:
       - autoscale
 
+  caddy:
+    image: abiosoft/caddy
+    volumes:
+      - /etc/autoscale/Caddyfile:/etc/Caddyfile
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2015:2015"
+    networks:
+      - autoscale
+
 networks:
   autoscale:
     driver: bridge
