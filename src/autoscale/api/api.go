@@ -3,7 +3,6 @@ package api
 import (
 	"autoscale/gen"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"pkg/ctxutil"
 	"pkg/echologger"
@@ -14,12 +13,18 @@ import (
 
 	"autoscale"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
 	"github.com/satori/go.uuid"
+)
+
+var (
+	// WebToken is the web token used for api auth.
+	WebToken string
 )
 
 type errorWrapper struct {
@@ -33,8 +38,7 @@ type errorMsg struct {
 }
 
 func errorHandler(err error, c echo.Context) {
-	log := ctxutil.LogFromContext(c)
-	fmt.Printf("wtf am i doing here")
+	log := logrus.WithField("action", "http")
 
 	code := http.StatusInternalServerError
 	msg := http.StatusText(code)
@@ -122,6 +126,13 @@ func New(ctx context.Context, repo autoscale.Repository, notify *autoscale.Notif
 	}
 
 	log := ctxutil.LogFromContext(ctx)
+
+	e.Use(middleware.BasicAuth(func(username, password string) bool {
+		if username == "autoscale" && password == WebToken {
+			return true
+		}
+		return false
+	}))
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

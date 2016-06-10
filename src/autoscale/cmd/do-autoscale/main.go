@@ -31,6 +31,7 @@ type Specification struct {
 	RegisterOfflineMetrics bool   `envconfig:"register_offline_metrics" default:"false"`
 	RegisterDefaultMetrics bool   `envconfig:"register_default_metrics" default:"true"`
 	UseMemoryResources     bool   `envconfig:"use_memory_resources" default:"false"`
+	WebToken               string `envconfig:"web_token" required:"true"`
 }
 
 func main() {
@@ -74,6 +75,7 @@ func main() {
 		log.WithError(err).Fatal("unable to initialize scheduler")
 	}
 
+	api.WebToken = s.WebToken
 	a := api.New(ctx, repo, notify)
 
 	log.WithFields(logrus.Fields{

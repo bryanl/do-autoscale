@@ -4,6 +4,7 @@ import (
 	"autoscale"
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -54,6 +55,10 @@ func withAPITest(t *testing.T, fn apiTestFn) {
 		return autoscale.NewLocalResource(ctx), nil
 	}
 
+	ogWebToken := WebToken
+	defer func() { WebToken = ogWebToken }()
+	WebToken = "token"
+
 	fn(ctx, mocks, u)
 
 	assert.True(t, repo.AssertExpectations(t))
@@ -61,6 +66,19 @@ func withAPITest(t *testing.T, fn apiTestFn) {
 	assert.True(t, mocks.groupResource.AssertExpectations(t))
 	assert.True(t, mocks.userConfigResource.AssertExpectations(t))
 	assert.True(t, mocks.groupConfigResource.AssertExpectations(t))
+}
+
+func doRequest(method, urlStr string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.SetBasicAuth("autoscale", "token")
+	req.Header.Set("Content-Type", "application/json")
+
+	transport := http.Transport{}
+	return transport.RoundTrip(req)
 }
 
 func TestListTemplates(t *testing.T) {
@@ -75,8 +93,9 @@ func TestListTemplates(t *testing.T) {
 
 		u.Path = "/api/templates"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
+
 		defer res.Body.Close()
 
 		require.Equal(t, 200, res.StatusCode)
@@ -96,10 +115,7 @@ func TestDeleteTemplate(t *testing.T) {
 
 		u.Path = "/api/templates/1"
 
-		req, err := http.NewRequest("DELETE", u.String(), nil)
-		require.NoError(t, err)
-
-		res, err := http.DefaultClient.Do(req)
+		res, err := doRequest("DELETE", u.String(), nil)
 		require.NoError(t, err)
 
 		require.Equal(t, 204, res.StatusCode)
@@ -116,7 +132,7 @@ func TestGetTemplate(t *testing.T) {
 
 		u.Path = "/api/templates/1"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -138,7 +154,7 @@ func TestGetMissingTemplate(t *testing.T) {
 
 		u.Path = "/api/templates/1"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -192,7 +208,7 @@ func TestCreateTemplate(t *testing.T) {
 		_, err := buf.Write(req)
 		require.NoError(t, err)
 
-		res, err := http.Post(u.String(), "application/json", &buf)
+		res, err := doRequest("POST", u.String(), &buf)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -218,7 +234,7 @@ func TestListGroups(t *testing.T) {
 
 		u.Path = "/api/groups"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -234,10 +250,7 @@ func TestDeleteGroup(t *testing.T) {
 
 		u.Path = "/api/groups/abc"
 
-		req, err := http.NewRequest("DELETE", u.String(), nil)
-		require.NoError(t, err)
-
-		res, err := http.DefaultClient.Do(req)
+		res, err := doRequest("DELETE", u.String(), nil)
 		require.NoError(t, err)
 
 		require.Equal(t, 204, res.StatusCode)
@@ -276,12 +289,7 @@ func TestUpdateGroup(t *testing.T) {
 		_, err := buf.WriteString(j)
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("PUT", u.String(), &buf)
-		require.NoError(t, err)
-
-		req.Header.Add("Content-Type", "application/json")
-
-		res, err := http.DefaultClient.Do(req)
+		res, err := doRequest("PUT", u.String(), &buf)
 		require.NoError(t, err)
 
 		require.Equal(t, 200, res.StatusCode)
@@ -301,7 +309,7 @@ func TestGetGroup(t *testing.T) {
 
 		u.Path = "/api/groups/abc"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -316,7 +324,7 @@ func TestGetMissingGroup(t *testing.T) {
 
 		u.Path = "/api/groups/1"
 
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -353,7 +361,7 @@ func TestCreateGroup(t *testing.T) {
 		_, err := buf.Write(req)
 		require.NoError(t, err)
 
-		res, err := http.Post(u.String(), "application/json", &buf)
+		res, err := doRequest("POST", u.String(), &buf)
 		require.NoError(t, err)
 		defer res.Body.Close()
 
@@ -364,9 +372,10 @@ func TestCreateGroup(t *testing.T) {
 func TestRouteRedirectsToDashboard(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		u.Path = "/"
-		res, err := http.Get(u.String())
+		res, err := doRequest("GET", u.String(), nil)
 		require.NoError(t, err)
 
-		require.Equal(t, http.StatusOK, res.StatusCode)
+		require.Equal(t, http.StatusFound, res.StatusCode)
+		require.Equal(t, "/dashboard/", res.Header.Get("Location"))
 	})
 }
