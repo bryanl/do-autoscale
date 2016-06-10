@@ -4,13 +4,11 @@ import (
 	"autoscale"
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
-	"github.com/manyminds/api2go/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -28,8 +26,8 @@ type apiTestFn func(ctx context.Context, mocks *apiTestMocks, u *url.URL)
 
 func withAPITest(t *testing.T, fn apiTestFn) {
 	ctx := context.Background()
-	notify := autoscale.NewNotify()
 	repo := &autoscale.MockRepository{}
+	notify := autoscale.NewNotify(ctx, repo)
 	api := New(ctx, repo, notify)
 
 	mocks := &apiTestMocks{
@@ -49,6 +47,12 @@ func withAPITest(t *testing.T, fn apiTestFn) {
 
 	u, err := url.Parse(ts.URL)
 	require.NoError(t, err)
+
+	ogRMFactory := autoscale.ResourceManagerFactory
+	defer func() { autoscale.ResourceManagerFactory = ogRMFactory }()
+	autoscale.ResourceManagerFactory = func(g *autoscale.Group) (autoscale.ResourceManager, error) {
+		return autoscale.NewLocalResource(ctx), nil
+	}
 
 	fn(ctx, mocks, u)
 
@@ -286,7 +290,11 @@ func TestUpdateGroup(t *testing.T) {
 
 func TestGetGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
-		ogGroup := autoscale.Group{ID: "abc"}
+		ogGroup := autoscale.Group{
+			ID:         "abc",
+			MetricType: "load",
+			PolicyType: "value",
+		}
 
 		resp := newResponse(&ogGroup, 200)
 		mocks.groupResource.On("FindOne", mock.Anything, "abc").Return(resp, nil)
@@ -298,19 +306,13 @@ func TestGetGroup(t *testing.T) {
 		defer res.Body.Close()
 
 		require.Equal(t, 200, res.StatusCode)
-
-		var group autoscale.Group
-		err = json.NewDecoder(res.Body).Decode(&group)
-		require.NoError(t, err)
-
-		require.Equal(t, "abc", group.ID)
 	})
 }
 
 func TestGetMissingGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
 		resp := newResponse(nil, 404)
-		mocks.templateResource.On("FindOne", mock.Anything, "1").Return(resp, nil)
+		mocks.groupResource.On("FindOne", mock.Anything, "1").Return(resp, nil)
 
 		u.Path = "/api/groups/1"
 
@@ -325,15 +327,7 @@ func TestGetMissingGroup(t *testing.T) {
 
 func TestCreateGroup(t *testing.T) {
 	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
-		group := autoscale.Group{
-			Name:       "group",
-			BaseName:   "as",
-			MetricType: "load",
-			PolicyType: "value",
-			TemplateID: "a-template",
-		}
-
-		newGroup := autoscale.Group{
+		newGroup := &autoscale.Group{
 			ID:         "1",
 			Name:       "group",
 			BaseName:   "as",
@@ -343,7 +337,7 @@ func TestCreateGroup(t *testing.T) {
 		}
 
 		resp := newResponse(newGroup, 201)
-		mocks.groupResource.On("Create", mock.Anything, group).Return(resp, nil)
+		mocks.groupResource.On("Create", mock.Anything, mock.AnythingOfType("autoscale.Group")).Return(resp, nil)
 
 		u.Path = "/api/groups"
 
@@ -364,14 +358,15 @@ func TestCreateGroup(t *testing.T) {
 		defer res.Body.Close()
 
 		require.Equal(t, 201, res.StatusCode)
+	})
+}
 
-		b, err := ioutil.ReadAll(res.Body)
+func TestRouteRedirectsToDashboard(t *testing.T) {
+	withAPITest(t, func(ctx context.Context, mocks *apiTestMocks, u *url.URL) {
+		u.Path = "/"
+		res, err := http.Get(u.String())
 		require.NoError(t, err)
 
-		var g autoscale.Group
-		err = jsonapi.Unmarshal(b, &g)
-		require.NoError(t, err)
-
-		require.Equal(t, newGroup, g)
+		require.Equal(t, http.StatusOK, res.StatusCode)
 	})
 }

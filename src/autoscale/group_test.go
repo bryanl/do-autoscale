@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,6 +30,13 @@ func TestGroup_IsValid(t *testing.T) {
 }
 
 func TestConvertGroupToJSON(t *testing.T) {
+	ctx := context.Background()
+	ogRMFactory := ResourceManagerFactory
+	defer func() { ResourceManagerFactory = ogRMFactory }()
+	ResourceManagerFactory = func(g *Group) (ResourceManager, error) {
+		return NewLocalResource(ctx), nil
+	}
+
 	m, err := NewFileLoad()
 	require.NoError(t, err)
 
@@ -63,4 +72,17 @@ func TestConvertGroupToJSON(t *testing.T) {
 	assert.Equal(t, g.MetricType, newGroup.MetricType)
 	assert.Equal(t, g.Policy, newGroup.Policy)
 	assert.Equal(t, g.Metric, newGroup.Metric)
+}
+
+func TestConvertEmptyGroupToJSON(t *testing.T) {
+	ctx := context.Background()
+	ogRMFactory := ResourceManagerFactory
+	defer func() { ResourceManagerFactory = ogRMFactory }()
+	ResourceManagerFactory = func(g *Group) (ResourceManager, error) {
+		return NewLocalResource(ctx), nil
+	}
+
+	g := Group{}
+	_, err := json.Marshal(&g)
+	assert.NoError(t, err)
 }

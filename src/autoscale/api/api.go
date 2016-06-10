@@ -3,6 +3,7 @@ package api
 import (
 	"autoscale/gen"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"pkg/ctxutil"
 	"pkg/echologger"
@@ -33,6 +34,7 @@ type errorMsg struct {
 
 func errorHandler(err error, c echo.Context) {
 	log := ctxutil.LogFromContext(c)
+	fmt.Printf("wtf am i doing here")
 
 	code := http.StatusInternalServerError
 	msg := http.StatusText(code)
@@ -164,34 +166,18 @@ func New(ctx context.Context, repo autoscale.Repository, notify *autoscale.Notif
 	g.Get("/group_configs", a.groupConfig)
 	g.Get("/notifications", standard.WrapHandler(a.notificationSocket()))
 
-	e.Get("/*", func(c echo.Context) error {
-		w := c.Response().(*standard.Response).ResponseWriter
-		r := c.Request().(*standard.Request).Request
+	e.Get("/", func(c echo.Context) error {
+		return c.Redirect(http.StatusFound, "/dashboard/")
+	})
 
+	assetHandler := http.StripPrefix("/dashboard",
 		http.FileServer(
 			&assetfs.AssetFS{
 				Asset:     gen.Asset,
 				AssetDir:  gen.AssetDir,
 				AssetInfo: gen.AssetInfo,
-				Prefix:    "static"}).
-			ServeHTTP(w, r)
-		return nil
-	})
-
-	e.Get("/assets/*", func(c echo.Context) error {
-		w := c.Response().(*standard.Response).ResponseWriter
-		r := c.Request().(*standard.Request).Request
-
-		http.StripPrefix(
-			"/assets/",
-			http.FileServer(&assetfs.AssetFS{
-				Asset:     gen.Asset,
-				AssetDir:  gen.AssetDir,
-				AssetInfo: gen.AssetInfo,
-				Prefix:    "static/assets"})).
-			ServeHTTP(w, r)
-		return nil
-	})
+				Prefix:    "static"}))
+	e.Get("/dashboard*", standard.WrapHandler(assetHandler))
 
 	e.SetHTTPErrorHandler(errorHandler)
 

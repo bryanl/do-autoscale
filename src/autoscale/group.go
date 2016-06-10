@@ -83,6 +83,13 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 		}
 
 		tmp.Metric = m
+	} else {
+		j, err := json.Marshal(map[string]interface{}{})
+		if err != nil {
+			return nil, err
+		}
+
+		tmp.Metric = j
 	}
 
 	if g.Policy != nil {
@@ -93,6 +100,13 @@ func (g *Group) MarshalJSON() ([]byte, error) {
 		}
 
 		tmp.Policy = p
+	} else {
+		j, err := json.Marshal(map[string]interface{}{})
+		if err != nil {
+			return nil, err
+		}
+
+		tmp.Policy = j
 	}
 
 	rm, err := g.Resource()

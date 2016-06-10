@@ -5,7 +5,7 @@ module.exports = function(environment) {
     modulePrefix: 'dashboard',
     environment: environment,
     baseURL: '/',
-    locationType: 'auto',
+    locationType: 'hash',
     EmberENV: {
       FEATURES: {
         // Here you can enable experimental features on an ember canary build
@@ -21,6 +21,7 @@ module.exports = function(environment) {
   };
 
   if (environment === 'development') {
+    // This needs to be changed based on your current dev configuration
     ENV.APP.websocketURL = "ws://192.81.208.211:8888/api/notifications";
 
     // ENV.APP.LOG_RESOLVER = true;
@@ -43,7 +44,9 @@ module.exports = function(environment) {
   }
 
   if (environment === 'production') {
-
+    ENV.baseURL = "/dashboard/";
+    // This needs to be changed based on your current production configuration
+    ENV.APP.websocketURL = "wss://autoscale-dev.x.pifft.com/api/notifications";
   }
 
   return ENV;
