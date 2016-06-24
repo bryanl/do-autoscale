@@ -23,7 +23,7 @@ services:
       - autoscale
   app:
     build: .
-    image: do-autoscale
+    image: bryanl/do-autoscale
     env_file: dev.env
     ports:
       - "8888:8888"
