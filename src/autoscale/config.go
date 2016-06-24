@@ -21,19 +21,14 @@ var (
 
 	DefaultGroupCheckTimeout = 5 * time.Second
 
+	tagNameFn = defaultTagName
+
 	// ResourceManagerFactory creates a ResourceManager given a group.
 	ResourceManagerFactory ResourceManagerFactoryFn = func(g *Group) (ResourceManager, error) {
 		doClient := DOClientFactory()
-		tag := fmt.Sprintf("do:as:%s", g.Name)
-
-		h := md5.New()
-		io.WriteString(h, tag)
-		hash := fmt.Sprintf("%x", h.Sum(nil))
-
-		newTag := hash[0:8]
-
+		tagName := tagNameFn(g.Name)
 		log := logrus.WithField("group-id", g.ID)
-		return NewDropletResource(doClient, newTag, log)
+		return NewDropletResource(doClient, tagName, log)
 	}
 
 	DOClientFactory = func() *doclient.Client {
@@ -57,3 +52,12 @@ var (
 	// autoscaleTag is the tag applied to all droplets created by autoscale.
 	autoscaleTag = "autoscale"
 )
+
+func defaultTagName(groupName string) string {
+	h := md5.New()
+	io.WriteString(h, groupName)
+	hash := fmt.Sprintf("%x", h.Sum(nil))
+
+	tag := fmt.Sprintf("as:%s", hash[0:8])
+	return tag
+}

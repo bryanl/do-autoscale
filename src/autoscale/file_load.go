@@ -95,7 +95,7 @@ func (l *FileLoad) Scan(src interface{}) error {
 	return json.Unmarshal(b, l)
 }
 
-// Measure returns the current value fro a group.
+// Measure returns the current value from a group.
 func (l *FileLoad) Measure(ctx context.Context, groupName string) (float64, error) {
 	p := filepath.Join(l.StatsDir, groupName)
 	b, err := ioutil.ReadFile(p)

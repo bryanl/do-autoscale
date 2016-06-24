@@ -67,6 +67,9 @@ func TestSchedule_Disabled(t *testing.T) {
 	}
 
 	tc := &testCheck{
+		ScaleFn: func(ctx context.Context, groupID string) *ActionStatus {
+			return nil
+		},
 		DisableFn: func(ctx context.Context, groupID string) *ActionStatus {
 			if groupID == expectedID {
 				actionRan = true
