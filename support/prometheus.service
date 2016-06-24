@@ -1,0 +1,14 @@
+[Unit]
+Description=Promethus
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill prometheus
+ExecStartPre=-/usr/bin/docker rm prometheus
+ExecStart=/usr/bin/docker run --name prometheus prom/prometheus
+ExecStop=/usr/bin/docker stop -t 2 prometheus
+
+[Install]
+WantedBy=multi-user.target

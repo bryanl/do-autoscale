@@ -1,0 +1,14 @@
+[Unit]
+Description=Autoscale service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill autoscale
+ExecStartPre=-/usr/bin/docker rm autoscale
+ExecStart=/usr/bin/docker run --name autoscale bryanl/do-autoscale
+ExecStop=/usr/bin/docker stop -t 2 autoscale
+
+[Install]
+WantedBy=multi-user.target
