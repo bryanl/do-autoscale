@@ -18,20 +18,20 @@ import (
 // Specification describes our expected environment.
 type Specification struct {
 	Env                    string `envconfig:"env" default:"development"`
-	DBUser                 string `envconfig:"db_user" required:"true"`
-	DBPassword             string `envconfig:"db_password" required:"true"`
-	DBAddr                 string `envconfig:"db_addr" required:"true"`
-	DBName                 string `envconfig:"db_name" required:"true"`
+	DBUser                 string `envconfig:"db_user" default:"autoscale"`
+	DBPassword             string `envconfig:"db_password" default:"autoscale"`
+	DBAddr                 string `envconfig:"db_addr" required:"true" default:"db:5432"`
+	DBName                 string `envconfig:"db_name" default:"autoscale"`
 	HTTPAddr               string `envconfig:"http_addr" default:"localhost:8888"`
 	AccessToken            string `envconfig:"access_token" required:"true"`
 	UseFileStats           bool   `envconfig:"use_file_stats" default:"false"`
 	FileStatDir            string `envconfig:"file_stat_dir"`
-	PrometheusConfigDir    string `envconfig:"prometheus_config_dir"`
-	PrometheusURL          string `envconfig:"prometheus_url" required:"true"`
+	PrometheusConfigDir    string `envconfig:"prometheus_config_dir" default:"/var/lib/autoscale/prometheus"`
+	PrometheusURL          string `envconfig:"prometheus_url" default:"http://prometheus:9090"`
 	RegisterOfflineMetrics bool   `envconfig:"register_offline_metrics" default:"false"`
 	RegisterDefaultMetrics bool   `envconfig:"register_default_metrics" default:"true"`
 	UseMemoryResources     bool   `envconfig:"use_memory_resources" default:"false"`
-	WebToken               string `envconfig:"web_token" required:"true"`
+	WebPassword            string `envconfig:"web_password" required:"true"`
 }
 
 func main() {
@@ -75,7 +75,7 @@ func main() {
 		log.WithError(err).Fatal("unable to initialize scheduler")
 	}
 
-	api.WebToken = s.WebToken
+	api.WebPassword = s.WebPassword
 	a := api.New(ctx, repo, notify)
 
 	log.WithFields(logrus.Fields{

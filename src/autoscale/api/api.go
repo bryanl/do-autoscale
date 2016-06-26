@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	// WebToken is the web token used for api auth.
-	WebToken string
+	// WebPassword is the web token used for api auth.
+	WebPassword string
 )
 
 type errorWrapper struct {
@@ -128,7 +128,7 @@ func New(ctx context.Context, repo autoscale.Repository, notify *autoscale.Notif
 	log := ctxutil.LogFromContext(ctx)
 
 	e.Use(middleware.BasicAuth(func(username, password string) bool {
-		if username == "autoscale" && password == WebToken {
+		if username == "autoscale" && password == WebPassword {
 			return true
 		}
 		return false

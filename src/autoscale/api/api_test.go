@@ -55,9 +55,9 @@ func withAPITest(t *testing.T, fn apiTestFn) {
 		return autoscale.NewLocalResource(ctx), nil
 	}
 
-	ogWebToken := WebToken
-	defer func() { WebToken = ogWebToken }()
-	WebToken = "token"
+	ogWebToken := WebPassword
+	defer func() { WebPassword = ogWebToken }()
+	WebPassword = "token"
 
 	fn(ctx, mocks, u)
 
