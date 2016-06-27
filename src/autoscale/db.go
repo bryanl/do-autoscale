@@ -52,6 +52,9 @@ func NewDB(ctx context.Context, user, password, addr, database string) (*sql.DB,
 			return nil, err
 		}
 
+		if sleepTime > 0 {
+			log.WithField("delay", sleepTime.String())
+		}
 		time.Sleep(sleepTime)
 
 		log.WithField("attempt", attempt).Info("connecting to db server")

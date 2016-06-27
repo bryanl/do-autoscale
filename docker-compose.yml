@@ -2,10 +2,7 @@ version: '2'
 
 services:
   db:
-    image: postgres
-    environment:
-      - POSTGRES_PASSWORD=TVLqAAB6kxKKynQ6
-      - POSTGRES_DB=autoscale
+    image: bryanl/postgres-autoscale
     ports:
       - "5432:5432"
     # volumes:
@@ -32,16 +29,16 @@ services:
     networks:
       - autoscale
 
-  caddy:
-    image: abiosoft/caddy
-    volumes:
-      - /etc/autoscale/Caddyfile:/etc/Caddyfile
-    ports:
-      - "80:80"
-      - "443:443"
-      - "2015:2015"
-    networks:
-      - autoscale
+  # caddy:
+  #   image: abiosoft/caddy
+  #   volumes:
+  #     - /etc/autoscale/Caddyfile:/etc/Caddyfile
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "2015:2015"
+  #   networks:
+  #     - autoscale
 
 networks:
   autoscale:
