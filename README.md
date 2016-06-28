@@ -1,6 +1,5 @@
 # do-autoscale
 
-An experiment in autoscaling
+Deploy an autoscale to automatically scale your servers based on load.
 
-## Deploying
 
