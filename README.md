@@ -2,4 +2,8 @@
 
 Deploy an autoscale to automatically scale your servers based on load.
 
+# Install
 
+# Usage
+
+# Upgrading
