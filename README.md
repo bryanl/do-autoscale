@@ -7,3 +7,5 @@ Deploy an autoscale to automatically scale your servers based on load.
 # Usage
 
 # Upgrading
+
+# Contributing
