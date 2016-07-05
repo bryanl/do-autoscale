@@ -4,9 +4,18 @@ Deploy an autoscale to automatically scale your servers based on load.
 
 # Install
 
+## Automated Droplet configuration
+
+If you use [doctl](https://github.com/digitalocean/doctl), you can create a server using the following: `doctl compute droplet create <name> --region nyc1 --size 4gb --image ubuntu-16-04-x64 --user-data-file userdata.sh --ssh-keys <your key id>`.  `userdata.sh` can be retrieved from [https://s3.pifft.com/autoscale/userdata.sh](https://s3.pifft.com/autoscale/userdata.sh).
+
+## Manual Droplet configuration
+
 1. Create a Ubuntu 16.04 Droplet. The autoscaler was designed with a 4GB Droplet in mind.
-2. Download `autoscalectl` from https://s3.pifft.com/autoscale/autscalectl, and mark it executeable
-3. Run `autoscalectl setup`
+1. Download `autoscalectl` from https://s3.pifft.com/autoscale/autscalectl, and mark it executeable
+
+## Running setup
+
+Run `autoscalectl setup`
 
 The setup process requires:
 
