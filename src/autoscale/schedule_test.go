@@ -68,7 +68,7 @@ func TestSchedule_Disabled(t *testing.T) {
 
 	tc := &testCheck{
 		ScaleFn: func(ctx context.Context, groupID string) *ActionStatus {
-			return nil
+			return as
 		},
 		DisableFn: func(ctx context.Context, groupID string) *ActionStatus {
 			if groupID == expectedID {
@@ -90,7 +90,7 @@ func TestSchedule_Disabled(t *testing.T) {
 
 	activity := <-status.Activity
 
-	require.False(t, actionRan)
+	require.True(t, actionRan)
 	require.Equal(t, expectedID, activity.ID)
-	require.Error(t, activity.Err)
+	require.NoError(t, activity.Err)
 }
