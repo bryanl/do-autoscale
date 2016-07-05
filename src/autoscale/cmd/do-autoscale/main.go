@@ -32,6 +32,7 @@ type Specification struct {
 	RegisterDefaultMetrics bool   `envconfig:"register_default_metrics" default:"true"`
 	UseMemoryResources     bool   `envconfig:"use_memory_resources" default:"false"`
 	WebPassword            string `envconfig:"web_password" required:"true"`
+	Tag                    string `envconfig:"tag" default:"autoscale"`
 }
 
 func main() {
@@ -51,6 +52,8 @@ func main() {
 			return rm, nil
 		}
 	}
+
+	autoscale.BaseTag = s.Tag
 
 	if s.RegisterDefaultMetrics && s.RegisterOfflineMetrics {
 		log.Fatal("can't specify offline and default metrics at the same time")
