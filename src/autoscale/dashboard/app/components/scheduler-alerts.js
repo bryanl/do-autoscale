@@ -13,7 +13,6 @@ export default Ember.Component.extend({
   },
 
   websocketConnect() {
-    // TODO get this URL from somewhere else
     var self = this;
 
     var websocketURL = this.websocketURL;
