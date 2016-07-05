@@ -11,11 +11,9 @@ export default Ember.Component.extend({
 
   // form items
   name: "template-1",
-  region: "tor1",
   size: "4gb",
   image: "ubuntu-14-04-x64",
   userData: null,
-  sshKeys: [{id: 104064}],
 
   actions: {
     submit: function() {
