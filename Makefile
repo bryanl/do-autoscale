@@ -1,11 +1,19 @@
+.PHONY: build-app push-app publish-build
+
 AUTOSCALE_HOST ?= 127.0.0.1
 
+CURRENT_TAG = `date +"%Y%m%d%H%M%S"`
+
 publish-build:
-  @docker build -f Dockerfile.build -t do-autoscale-build . && \
-    docker run --rm -it -v ~/.mc:/root/.mc  do-autoscale-build
+	@docker build -f Dockerfile.build -t do-autoscale-build . && \
+		docker run --rm -it -v ~/.mc:/root/.mc  do-autoscale-build
 
 build-app:
-	docker-compose build app
+	@docker build -t bryanl/do-autoscale . && \
+	  docker tag bryanl/do-autoscale bryanl/do-autoscale:${CURRENT_TAG}
+
+push-app: build-app
+	@docker push bryanl/do-autoscale
 
 test:
 	@gb test
