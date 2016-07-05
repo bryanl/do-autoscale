@@ -44,8 +44,7 @@ module.exports = function(environment) {
 
   if (environment === 'production') {
     ENV.baseURL = "/dashboard/";
-    // This needs to be changed based on your current production configuration
-    ENV.APP.websocketURL = "wss://autoscale-dev.x.pifft.com/api/notifications";
+    ENV.APP.websocketURL = "";
   }
 
   return ENV;

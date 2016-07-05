@@ -15,7 +15,14 @@ export default Ember.Component.extend({
   websocketConnect() {
     // TODO get this URL from somewhere else
     var self = this;
-    const socket = this.get('websockets').socketFor(this.websocketURL);
+
+    var websocketURL = this.websocketURL;
+    if (websocketURL.length == 0) {
+      var l = window.location;
+      websocketURL = "wss://" + l.host + "/api/notifications";
+    }
+
+    const socket = this.get('websockets').socketFor(websocketURL);
     socket.on('open', this.myOpenHandler, this);
     socket.on('message', this.myMessageHandler, this);
     socket.on('close', () => {

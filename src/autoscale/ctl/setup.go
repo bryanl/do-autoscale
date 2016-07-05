@@ -31,7 +31,7 @@ func (cc *CaddyConfig) Generate(c *Config) string {
 		fmt.Fprintln(&buf, "tls /etc/autoscale/ssl/autoscale.crt /etc/autoscale/ssl/autoscale.key")
 	}
 
-	fmt.Fprintln(&buf, "proxy / autoscale:8888")
+	fmt.Fprintln(&buf, caddyProxy)
 	return buf.String()
 }
 
@@ -377,3 +377,9 @@ ExecStop=/usr/bin/docker stop -t 2 caddy
 
 [Install]
 WantedBy=multi-user.target`
+
+var caddyProxy = `proxy / autoscale:8888 {
+  proxy_header X-Real-IP {remote}
+  proxy_header X-Forwarded-Proto {scheme}
+  websocket
+}`
