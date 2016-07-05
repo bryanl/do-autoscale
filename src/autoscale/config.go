@@ -12,13 +12,19 @@ import (
 )
 
 var (
+	// ErrActionTimedOut is a timeout error.
 	ErrActionTimedOut = fmt.Errorf("action timed out")
-	ErrDisabledGroup  = fmt.Errorf("group is disabled")
 
+	// ErrDisabledGroup is return if the group is disabled.
+	ErrDisabledGroup = fmt.Errorf("group is disabled")
+
+	// ScheduleReenqueueTimeout is how long to wait when reenqueuing a check.
 	ScheduleReenqueueTimeout = 10 * time.Second
 
+	// SchedulerActionTimeout is time it takes a schedule action to timeout.
 	SchedulerActionTimeout = 60 * time.Minute
 
+	// DefaultGroupCheckTimeout is how often new groups are checked.
 	DefaultGroupCheckTimeout = 5 * time.Second
 
 	tagNameFn = defaultTagName
@@ -31,6 +37,7 @@ var (
 		return NewDropletResource(doClient, tagName, log)
 	}
 
+	// DOClientFactory createsa  do client.
 	DOClientFactory = func() *doclient.Client {
 		return doclient.New(DOAccessToken())
 	}
@@ -49,8 +56,8 @@ var (
 
 	prometheusAgentPort = 9100
 
-	// autoscaleTag is the tag applied to all droplets created by autoscale.
-	autoscaleTag = "autoscale"
+	// BaseTag is the tag applied to all droplets created by autoscale.
+	BaseTag = "autoscale"
 )
 
 func defaultTagName(groupName string) string {
