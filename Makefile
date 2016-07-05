@@ -1,6 +1,8 @@
-.PHONY: all
-
 AUTOSCALE_HOST ?= 127.0.0.1
+
+publish-build:
+  @docker build -f Dockerfile.build -t do-autoscale-build . && \
+    docker run --rm -it -v ~/.mc:/root/.mc  do-autoscale-build
 
 build-app:
 	docker-compose build app

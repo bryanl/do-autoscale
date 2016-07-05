@@ -8,6 +8,12 @@
 			"branch": "default"
 		},
 		{
+			"importpath": "github.com/BurntSushi/toml",
+			"repository": "https://github.com/BurntSushi/toml",
+			"revision": "f0aeabca5a127c4078abb8c8d64298b147264b55",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/Sirupsen/logrus",
 			"repository": "https://github.com/Sirupsen/logrus",
 			"revision": "cd7d1bbe41066b6c1f19780f895901052150a575",
@@ -31,6 +37,13 @@
 			"repository": "https://github.com/codegangsta/negroni",
 			"revision": "ffbc66b612ee3eac2eba29aedce4c3a65e4dd0a1",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/cpuguy83/go-md2man/md2man",
+			"repository": "https://github.com/cpuguy83/go-md2man",
+			"revision": "2724a9c9051aa62e9cca11304e7dd518e9e41599",
+			"branch": "master",
+			"path": "/md2man"
 		},
 		{
 			"importpath": "github.com/davecgh/go-spew/spew",
@@ -61,6 +74,12 @@
 			"importpath": "github.com/fatih/color",
 			"repository": "https://github.com/fatih/color",
 			"revision": "533cd7fd8a85905f67a1753afb4deddc85ea174f",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/fsnotify/fsnotify",
+			"repository": "https://github.com/fsnotify/fsnotify",
+			"revision": "a8a77c9133d2d6fd8334f3260d06f60e8d80a5fb",
 			"branch": "master"
 		},
 		{
@@ -117,6 +136,12 @@
 			"importpath": "github.com/hailocab/go-hostpool",
 			"repository": "https://github.com/hailocab/go-hostpool",
 			"revision": "e80d13ce29ede4452c43dea11e79b9bc8a15b478",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/hashicorp/hcl",
+			"repository": "https://github.com/hashicorp/hcl",
+			"revision": "61f5143284c041681f76a5b63efcb232aaa94737",
 			"branch": "master"
 		},
 		{
@@ -216,6 +241,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/magiconair/properties",
+			"repository": "https://github.com/magiconair/properties",
+			"revision": "c265cfa48dda6474e208715ca93e987829f572f8",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/manyminds/api2go",
 			"repository": "https://github.com/manyminds/api2go",
 			"revision": "5207f05d44090999ebf2e09b3e66566484c4dbee",
@@ -251,6 +282,12 @@
 			"revision": "c12348ce28de40eed0136aa2b644d0ee0650e56c",
 			"branch": "master",
 			"path": "/pbutil"
+		},
+		{
+			"importpath": "github.com/mitchellh/mapstructure",
+			"repository": "https://github.com/mitchellh/mapstructure",
+			"revision": "d2dd0262208475919e1a362f675cfc0e7c10e905",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/pmezard/go-difflib/difflib",
@@ -293,9 +330,51 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/russross/blackfriday",
+			"repository": "https://github.com/russross/blackfriday",
+			"revision": "1d6b8e9301e720b08a8938b8c25c018285885438",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/satori/go.uuid",
 			"repository": "https://github.com/satori/go.uuid",
 			"revision": "f9ab0dce87d815821e221626b772e3475a0d2749",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/shurcooL/sanitized_anchor_name",
+			"repository": "https://github.com/shurcooL/sanitized_anchor_name",
+			"revision": "10ef21a441db47d8b13ebcc5fd2310f636973c77",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/cast",
+			"repository": "https://github.com/spf13/cast",
+			"revision": "27b586b42e29bec072fe7379259cc719e1289da6",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/cobra",
+			"repository": "https://github.com/spf13/cobra",
+			"revision": "6a8bd97bdb1fc0d08a83459940498ea49d3e8c93",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/jwalterweatherman",
+			"repository": "https://github.com/spf13/jwalterweatherman",
+			"revision": "33c24e77fb80341fe7130ee7c594256ff08ccc46",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/pflag",
+			"repository": "https://github.com/spf13/pflag",
+			"revision": "367864438f1b1a3c7db4da06a2f55b144e6784e0",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/viper",
+			"repository": "https://github.com/spf13/viper",
+			"revision": "c1ccc378a054ea8d4e38d8c67f6938d4760b53dd",
 			"branch": "master"
 		},
 		{
@@ -355,6 +434,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"revision": "a408501be4d17ee978c04a618e7a1b22af058c0e",
+			"branch": "master",
+			"path": "/unix"
+		},
+		{
 			"importpath": "google.golang.org/cloud/compute/metadata",
 			"repository": "https://code.googlesource.com/gocloud",
 			"revision": "1f12b9c398dff80ed8bd457aeb03aa24d7cf70eb",
@@ -403,6 +489,12 @@
 			"repository": "https://gopkg.in/tylerb/graceful.v1",
 			"revision": "9a3d4236b03bb5d26f7951134d248f9d5510d599",
 			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/yaml.v2",
+			"repository": "https://gopkg.in/yaml.v2",
+			"revision": "a83829b6f1293c91addabc89d0571c246397bbf4",
+			"branch": "v2"
 		}
 	]
 }

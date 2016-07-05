@@ -8,4 +8,6 @@ ADD . /go
 WORKDIR /go
 RUN CGO_ENABLED=0 go install autoscale/cmd/do-autoscale
 
+EXPOSE 8888
+
 ENTRYPOINT ["/go/bin/do-autoscale"]
