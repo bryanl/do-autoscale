@@ -23,6 +23,15 @@ func InitCommands() {
 			}
 		},
 	}
-
 	RootCmd.AddCommand(setupCmd)
+
+	updateCmd := &cobra.Command{
+		Use: "update",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := update(); err != nil {
+				logrus.WithError(err).Fatal("unabe to run update")
+			}
+		},
+	}
+	RootCmd.AddCommand(updateCmd)
 }
