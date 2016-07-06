@@ -2,18 +2,18 @@
 
 Deploy an autoscale to automatically scale your servers based on load.
 
-# Install
+## Install
 
-## Automated Droplet configuration
+### Automated Droplet configuration
 
 If you use [doctl](https://github.com/digitalocean/doctl), you can create a server using the following: `doctl compute droplet create <name> --region nyc1 --size 4gb --image ubuntu-16-04-x64 --user-data-file userdata.sh --ssh-keys <your key id>`.  `userdata.sh` can be retrieved from [https://s3.pifft.com/autoscale/userdata.sh](https://s3.pifft.com/autoscale/userdata.sh).
 
-## Manual Droplet configuration
+### Manual Droplet configuration
 
 1. Create a Ubuntu 16.04 Droplet. The autoscaler was designed with a 4GB Droplet in mind.
 1. Download `autoscalectl` from https://s3.pifft.com/autoscale/autscalectl, and mark it executeable
 
-## Running setup
+### Running setup
 
 Run `autoscalectl setup`
 
@@ -26,12 +26,17 @@ The setup process requires:
 
 If you choose to use your own key/certs, place them in the /etc/autoscale/ssl directory and name them autoscale.crt and autoscale.key. You should ensure to `chmod 600 autoscale.key` for safetey.
 
-# Usage
+## Usage
 
 Navigate to https://your.host.com and use `autoscale` as your user name, and the password you chose earlier as your password.
 
-# Upgrading
+## Upgrading
 
 Run `autoscalectl update` to update the autoscaler..
 
+## Building
 
+In line with typical Go thoughts, all generated assets are checked into the repo. This assists continuous integration as
+Docker containers can be built without having to generate any assets.
+
+The application is automatically built and deployed from Travis CI to Docker Hub.
