@@ -2,6 +2,7 @@
 /bin
 /pkg
 /vendor/pkg
+/vendor/bin
 /dev.env
 
 /config/prom-configs/*

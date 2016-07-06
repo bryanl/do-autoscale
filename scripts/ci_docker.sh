@@ -2,7 +2,13 @@
 
 set -ev
 
+PATH=$(pwd)/bin:$(pwd)/vendor/bin:$PATH
+
 docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+
+cd vendor
+gb build .../go-bindata
+cd ..
 
 if [ "$TRAVIS_BRANCH" = "master" ]; then
   make generate build-app
