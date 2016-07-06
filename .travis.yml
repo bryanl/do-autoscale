@@ -1,6 +1,11 @@
 language: go
 go:
   - 1.6
-sudo: false
+sudo: required
+services:
+  - docker
 install: true
 script: scripts/ci.sh
+after_success:
+- scripts/ci_docker.sh
+

@@ -2,15 +2,20 @@
 
 AUTOSCALE_HOST ?= 127.0.0.1
 
-CURRENT_TAG = `date +"%Y%m%d%H%M%S"`
+DOCKER_TAG ?= `date +"%Y%m%d%H%M%S"`
+BUILD_LATEST ?= 1
 
 publish-build:
 	@docker build -f Dockerfile.build -t do-autoscale-build . && \
 		docker run --rm -it -v ~/.mc:/root/.mc  do-autoscale-build
 
 build-app:
+ifeq ($(BUILD_LATEST),1)
 	@docker build -t bryanl/do-autoscale . && \
-	  docker tag bryanl/do-autoscale bryanl/do-autoscale:${CURRENT_TAG}
+		docker tag bryanl/do-autoscale bryanl/do-autoscale:${DOCKER_TAG}
+else
+	@docker build -t bryanl/do-autoscale:${DOCKER_TAG} .
+endif
 
 push-app: build-app
 	@docker push bryanl/do-autoscale
