@@ -11,9 +11,9 @@ gb build .../go-bindata
 cd ..
 
 if [ "$TRAVIS_BRANCH" = "master" ]; then
-  make generate build-app
+  make build-app
 else
-  DOCKER_TAG=$TRAVIS_BRANCH BUILD_LATEST=0 make generate build-app
+  DOCKER_TAG=${TRAVIS_BRANCH} BUILD_LATEST=0 make build-app
 fi
 
 docker push bryanl/do-autoscale
