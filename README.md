@@ -11,7 +11,7 @@ If you use [doctl](https://github.com/digitalocean/doctl), you can create a serv
 ### Manual Droplet configuration
 
 1. Create a Ubuntu 16.04 Droplet. The autoscaler was designed with a 4GB Droplet in mind.
-1. Download `autoscalectl` from https://s3.pifft.com/autoscale/autscalectl, and mark it executeable
+1. Download `autoscalectl` from https://s3.pifft.com/autoscale/autoscalectl, and mark it executeable
 
 ### Running setup
 
